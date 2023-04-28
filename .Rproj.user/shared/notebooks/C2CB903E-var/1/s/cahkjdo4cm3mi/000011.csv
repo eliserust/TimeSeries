@@ -1,0 +1,5 @@
+"0","dd.ts1<-ts(df,star=decimal_date(as.Date(""1990-01-01"",format = ""%Y-%m-%d"")),frequency = 1)"
+"0",""
+"0","autoplot(dd.ts1[,c(2:4)], facets=TRUE) +"
+"0","  xlab(""Year"") + ylab("""") +"
+"0","  ggtitle(""Variables influencing CO2 Emissions in USA"")"

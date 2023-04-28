@@ -1,0 +1,272 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "ARIMAX/SARIMAX/VAR"
+---
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo=FALSE) 
+
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(astsa) 
+library(xts)
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(tidyverse)
+library(TSstudio)
+library(quantmod)
+library(tidyquant)
+library(plotly)
+library(ggplot2)
+```
+
+## Predicting annual CO2 Emissions from energy cost and production 1990-2010
+
+**ARIMAX Model**
+
+Data:
+```{r}
+energy_sources <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/clean_energy_sources.csv")
+cost <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/Price_Clean.csv", skip=2)
+co2 <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/CO2.csv")
+
+# Clean Data
+energy_sources <- energy_sources %>%
+  mutate(Output = as.double(Output)) %>%
+  mutate(YEAR = as.Date(ISOdate(YEAR, 1, 1))) %>%  # beginning of year 
+  select(-c("X")) %>%
+  filter(YEAR <= "2010-01-01" & YEAR >= "1990-01-01")
+
+energy_sources <- energy_sources %>%
+  group_by(YEAR) %>%
+  summarise(Total.Output = sum(Output))
+
+cost <- cost %>%
+  select(c("Year", "Total.Energy")) %>%
+  mutate(YEAR = as.Date(ISOdate(Year, 1, 1))) %>%  # beginning of year 
+  filter(YEAR <= "2010-01-01" & YEAR >= "1990-01-01") %>%
+  select(-c("Year"))
+
+co2 <- co2 %>%
+  select(-c("MSN", "Column_Order", "Unit")) %>%
+  mutate(YYYYMM = as.Date(paste0(as.character(YYYYMM), '01'), format='%Y%m%d')) %>%
+  mutate(Year = format(YYYYMM,"%Y")) %>%
+  filter(Description == "Total Energy CO2 Emissions") %>%
+  select(-c("Description")) %>%
+  group_by(Year) %>%
+  summarise(Total.CO2 = sum(Value)) %>%
+  mutate(YEAR = as.Date(ISOdate(Year, 1, 1))) %>%
+  filter(YEAR <= "2010-01-01" & YEAR >= "1990-01-01") %>%
+  select(-c("Year"))
+co2 <- na.omit(co2) # Remove NAs
+
+# Joino Data
+df = merge(energy_sources, cost, by="YEAR")
+df = merge(df, co2, by="YEAR")
+head(df)
+
+colnames(df) <- c("Year", "Energy_Production", "Energy_Cost", "CO2_Emissions")
+```
+
+**Plotting the data**
+```{r}
+dd.ts1<-ts(df,star=decimal_date(as.Date("1990-01-01",format = "%Y-%m-%d")),frequency = 1)
+
+autoplot(dd.ts1[,c(2:4)], facets=TRUE) +
+  xlab("Year") + ylab("") +
+  ggtitle("Variables influencing CO2 Emissions in USA")
+```
+
+### Background Literature
+
+This paper, [Forecasting of transportation-related energy demand and CO2 emissions in Turkey with different ML algorithms](https://www.sciencedirect.com/science/article/abs/pii/S2352550921002840?via%3Dihub) utilizes energy production as a key predictive variable for CO2 emissions in Turkey between 1990-2014. Though many authors use Energy Consumption as a predictor for CO2 Emissions, production and consumption are closely tied due to economic demand for energy, so production is a worthy proxy.
+
+This paper, [Machine Learning in Estimating CO2 Emissions from Electricity Generation](https://www.intechopen.com/chapters/76238) uses ML techniques to produce accurate modeling of energy costs, and then using a cost-effective analysis to estimate CO2 emissions. As prices fluctuate around different fuel sources, and natural gas in the US takes off and coal usage diminishes, it will be interesting to see if these cost fluctuations have any impact on CO2 emissions.
+
+### i) Choose response variables
+
+The key response variable here is total CO2 emissions from 1990-2010. The independent variables are total electricity production and total cost of electricity between 1990-2010. Due to data availability, these years were chosen and analysis has to be done at the annual level.
+
+### ii) Log Transform
+
+Log transform cost of energy, energy production, and co2 emissions.
+```{r}
+df$production_log = log(df$Energy_Production)
+df$cost_log = log(df$Energy_Cost)
+df$emissions_log = log(df$CO2_Emissions)
+
+df <- df %>%
+  select(c("Year", "production_log", "cost_log", "emissions_log"))
+
+dd.ts<-ts(df,star=decimal_date(as.Date("1990-01-01",format = "%Y-%m-%d")),frequency = 1)
+
+autoplot(dd.ts[,c(2:4)], facets=TRUE) +
+  xlab("Year") + ylab("") +
+  ggtitle("Log(Variables) influencing CO2 Emissions in USA")
+```
+
+### iii) Fit using auto.arima()
+```{r}
+xreg <- cbind(Cost = dd.ts[, "cost_log"],
+              Production = dd.ts[, "production_log"])
+
+fit <- auto.arima(dd.ts[, "emissions_log"], xreg = xreg)
+summary(fit)
+checkresiduals(fit)
+```
+From auto.arima(), our model is an ARIMAX. This is a Regression model with ARIMA(0,0,1) with no errors. Though the data is highly non-stationary, the Arima model is being fit on the residuals, not the data itself. To compare, in part iv, I fit a model manually.
+
+### iv) Fit the model manually
+
+First, fit the linear regression model predicting log_emissions using production, and cost of fuel.
+Then for the residuals, fit an ARIMA model.
+
+```{r}
+df$emissions_log<-ts(df$emissions_log,star=decimal_date(as.Date("1990-01-01",format = "%Y-%m-%d")),frequency = 1)
+df$cost_log<-ts(df$cost_log,star=decimal_date(as.Date("1990-01-01",format = "%Y-%m-%d")),frequency = 1)
+df$production_log<-ts(df$production_log,star=decimal_date(as.Date("1990-01-01",format = "%Y-%m-%d")),frequency = 1)
+
+############# First fit the linear model##########
+fit.reg <- lm(emissions_log ~ cost_log+production_log, data=df)
+summary(fit.reg)
+```
+Now look at the residuals.
+```{r}
+############## Then look at the residuals ############
+res.fit<-ts(residuals(fit.reg),star=decimal_date(as.Date("1990-01-01",format = "%Y-%m-%d")),frequency = 1)
+res.fit %>% ggtsdisplay()
+```
+Interestingly, from the ACF/PACF plots the data looks stationary without differencing. Let's do some model fitting of different parameters to experiment. Because there aren't statistically significantly correlated lags (via spikes), I will experiment with:
+
+**p = 0,1,2**
+**q = 0,1,2**
+**d = 0,1,2**
+
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+arimax = data.frame(matrix(ncol = 6, nrow = 0))
+colnames(arimax) <- c("p","d","q","AIC","BIC","AICc")
+
+for (p in c(1:3))# p=0,1,2
+{
+  for(q in c(1:3))# q=0,1,2
+  {
+    for(d in c(1:2)) # d=0,1,2
+    {
+       if(p+q<6) 
+      {
+         model = Arima(res.fit,order=c(p-1,d,q-1))
+         arimax <- arimax %>% add_row(p=p-1,d=d,q=q-1,AIC=model$aic,BIC=model$bic,AICc=model$aicc)
+       }
+    }
+  }
+}
+
+knitr::kable(arimax)
+```
+
+Choose the model that minmizes AIC, BIC, and AICc
+
+```{r}
+arimax[which.min(arimax$AIC),] #0,1,0
+arimax[which.min(arimax$BIC),] # 0,1,0
+arimax[which.min(arimax$AICc),] # 0,1,0
+```
+
+The model that minimizes AIC is ARIMA(0,1,2) and the model that minimizes AICc and BIC is ARIMA(0,1,0)
+
+### v) Cross validation
+
+Here I use cross validation to find the best model from the above 3 models.
+
+**auto.arima() chose Arima(0,0,1)
+**manually - Arima(0,1,0) or Arima(0,1,2)
+
+```{r, error=TRUE}
+n=length(res.fit)
+k=n*0.4
+x = (n-k)/4
+ 
+rmse1 <- matrix(NA,x,4)
+rmse2 <- matrix(NA,x,4)
+rmse3 <- matrix(NA,x,4)
+
+st <- tsp(res.fit)[1]+(k-1)/4 
+
+for(i in 1:3)
+{
+  xtrain <- res.fit[1:(k-1)+i] #observations from 1 to 75
+  xtest <- res.fit[k+i] #76th observation as the test set
+  
+  #xtrain <- window(res.fit, end=st + i-1)
+  #xtest <- window(res.fit, start=st + (i-1) + 1/4, end=st + i)
+  
+  fit <- Arima(xtrain, order=c(0,0,1),
+                include.drift=TRUE, method="ML")
+  fcast <- forecast(fit, h=4)
+  
+  fit2 <- Arima(xtrain, order=c(0,1,0),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=4)
+  
+  fit3 <- Arima(xtrain, order=c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast3 <- forecast(fit3, h=4)
+  
+  rmse1[i,]  <- sqrt((fcast$mean-xtest)^2)
+  rmse2[i,] <- sqrt((fcast2$mean-xtest)^2)
+  rmse3[i,] <- sqrt((fcast3$mean-xtest)^2)
+  
+}
+```
+
+RMSEs from the three models
+```{r}
+plot(1:4, colMeans(rmse1,na.rm=TRUE), type="l", col=2, xlab="horizon", ylab="RMSE")
+lines(1:4, colMeans(rmse2,na.rm=TRUE), type="l",col=3)
+lines(1:4, colMeans(rmse3,na.rm=TRUE), type="l",col=4)
+legend("topleft",legend=c("fit1","fit2","fit3"),col=2:4,lty=1)
+```
+
+Mean RMSEs across three models
+```{r}
+colMeans( rmse1,na.rm=TRUE)
+colMeans( rmse2,na.rm=TRUE)
+colMeans( rmse3,na.rm=TRUE)
+```
+
+The best model via RMSEs is Arima(0,0,1) actually! By a small margin.
+
+### vii) Forecast using model
+
+```{r}
+xreg <- cbind(Cost = dd.ts[, "cost_log"],
+              Production = dd.ts[, "production_log"])
+
+fit <- Arima(df$emissions_log,order=c(0,0,1),xreg=xreg)
+summary(fit)
+```
+
+The model equation is:
+$$
+\theta(B) = 1 - 0.7939(B)
+$$
+
+
+```{r}
+cost_fit<-auto.arima(df$cost_log) #fiting an ARIMA model to the Export variable
+fcost<-forecast(cost_fit)
+prod_fit<-auto.arima(df$production_log) #fiting an ARIMA model to the Import variable
+fprod<-forecast(prod_fit)
+fxreg <- cbind(Cost = fcost$mean,
+              Production = fprod$mean)
+fcast <- forecast(fit, xreg=fxreg) #fimp$mean gives the forecasted values
+autoplot(fcast) + xlab("Year") +
+  ylab("Emissions")
+```
+The data only went until 2010, so emissions are forecasted for the next 10 years. The forecast from regression with ARIMA(0,0,1) predicts emissions steadily increase. Despite a dip in emissions in 2008, the forecast follows the upwards trend occurring at the end of the time series in 2010, which predicts growing emissions.
+

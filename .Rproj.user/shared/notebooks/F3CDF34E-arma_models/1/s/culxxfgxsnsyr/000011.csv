@@ -1,0 +1,2 @@
+"0","ARS <- arima(solar_ts, order = c(1,2,2))"
+"0","ARS %>% forecast(h=3) %>% autoplot()"

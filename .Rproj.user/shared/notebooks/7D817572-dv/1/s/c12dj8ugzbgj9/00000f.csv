@@ -1,0 +1,4 @@
+"0",""
+"0","# Load climate data"
+"0","climate <- read.csv(""~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Labs/lab0/climate.csv"")"
+"0","head(climate)"

@@ -1,0 +1,2 @@
+"0","ARC <- arima(coal_ts, order = c(1,2,3))"
+"0","ARC %>% forecast(h=3) %>% autoplot()"

@@ -1,0 +1,679 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "Exploratory Data Analysis"
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo=FALSE) 
+
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(stringr)
+library(lubridate)
+library(ggfortify)
+library(fma)
+library(xts)
+library(forecast)
+library(astsa) 
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(TSstudio)
+library(quantmod)
+library(tidyquant)
+library(smooth)
+library(gridExtra)
+
+set.seed(10)
+```
+
+## Dataset 1 - Electricity Production
+
+### 1) Identify time series components of data
+
+<br> It is first important to visualize the time series at its most basic level. Electricity production data has been subsetted to include just 4 energy sources: **Coal, Nuclear, Wind, and Solar**. Below is a basic time series plot of US production of these products between 1990 and 2022.
+
+```{r}
+energy_sources <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/clean_energy_sources.csv")
+
+energy_sources <- energy_sources %>%
+  mutate(Output = as.double(Output)) %>%
+  mutate(YEAR = as.Date(ISOdate(YEAR, 1, 1)))  # beginning of year
+
+coal <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Coal")
+nuclear <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Nuclear")
+wind <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Wind")
+solar <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Solar Thermal and Photovoltaic")
+
+ggplot(coal, aes(x = YEAR, y = Output, colour="Coal")) +
+  geom_line()+
+  geom_line(data = nuclear, aes(x=YEAR,y=Output, colour="Nuclear")) +
+  geom_line(data = wind, aes(x=YEAR,y=Output, colour="Wind")) +
+  geom_line(data = solar, aes(x=YEAR,y=Output, colour="Solar")) +
+  labs(
+    title = "US Production of Different Fuel Sources",
+    subtitle = "From 1990 - 2022",
+    x = "Date",
+    y = "Megawatthours")+
+    guides(colour=guide_legend(title="Energy Source")) 
+```
+
+This preliminary examination of the data shows that production of nuclear, solar, and wind have trended upwards over this timeframe while coal peaked in 2007 and has trended down ever since. There isn't much seasonality or cyclicality in production of nuclear, solar or wind but there may be some additive seasonality in coal production. Coal production, however, may be seasonal, as demand for coal spikes during cold winter months and drops during summer months. Further analysis and tools are necessary to confirm this hypothesis.
+
+### 2) Lag Plots
+
+<br> Examining lags in time series data highlights any potential correlations between steps along the time interval --\> i.e. is energy production at time t correlated with energy production at time t-1? Does the previous year's energy production impact energy production in future years (e.g. perhaps because of investments made in infrastructure or the passage of legislation that would affect production). Lag plots also help to understand any potential seasonality in the data.
+
+```{r}
+# Create time series objects
+coal_ts <- ts(coal$Output, start = c(1990,1), frequency=1)
+nuclear_ts <- ts(nuclear$Output, start = c(1990,1), frequency=1)
+wind_ts <- ts(wind$Output, start = c(1990,1), frequency=1)
+solar_ts <- ts(solar$Output, start = c(1990,1), frequency=1)
+```
+
+#### 1 Year, 2 Year, 10 Year, 20 Year Lags in Coal Production
+
+```{r}
+ts_lags(coal_ts, lags=c(1,2,10, 20))
+```
+
+#### 1 Year, 2 Year, 10, 20 Year Lags in Nuclear Production
+
+```{r}
+ts_lags(nuclear_ts, lags=c(1,2,10,20))
+```
+
+#### 1 Year, 2 Year, 10, 20 Year Lags in Wind Production
+
+```{r}
+ts_lags(wind_ts, lags=c(1,2,10,20))
+```
+
+#### 1 Year, 2 Year, 10, 20 Year Lags in Solar Production
+
+```{r}
+ts_lags(solar_ts, lags=c(1,2,10,20))
+```
+
+In coal production, there's a weak autocorrelation between the data and a 1 year lag, indicating that there is some connection between year to year production but other factors may play a larger role. Lags 2 and 10 are essentially random; thus, it's likely that there isn't a correlation between the time series data and lags farther away. Lag 20 shows a weak negative correlation - weak enough that we can't make any grand-standing hypotheses to explain it.
+
+Nuclear production shows no autocorrelation across any lag periods, while wind and solar exhibit strong autocorrelation for Lags 1 and 2 and no correlation for lags of 10 and 20. These strong correlations for 1 to 2 year lags are likely due to weather cycles - wind and solar are more dependent on weather systems such as El Niño or La Niña which exhibit their own cyclical behavior.
+
+### 3) Decompose data
+
+<br> The data cannot be decomposed because it lacks seasonality! For more information on this data's behavior, see the simple moving average (SMA) analysis below.
+
+```{r}
+ets <- ts(data.frame(COAL=coal$Output, NUCLEAR=nuclear$Output, SOLAR=solar$Output, WIND=wind$Output), star=decimal_date(as.Date("1990-01-01")), frequency = 1)
+
+# print("Trend of all 4 energy sources")
+# autoplot(decompose(ets)$trend)
+# 
+# print("Seasonality of all 4 energy sources")
+# autoplot(decompose(ets)$seasonal)
+# 
+# print("Noise of all 4 energy sources")
+# autoplot(decompose(ets)$random)
+```
+
+### 4) ACF/PACF Plots <br>
+
+Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF) plots are useful for showing the correlation coefficients between a time series and its own lagged values. ACF looks at the time series and previous values of the series measured for different lag lenths - while PACF looks directly at the correlation between a time series and a given lag. Both are also useful for identifying if the data has stationarity - where the mean, variance, and autocorrelation structure do not change over time.
+
+Before building ACF/PACF plots the data is de-trended - using detrending and differencing - to examine seasonality and cyclicality directly. Detrending occurs by regressing the total production output against the date, predicting total production output for each date, and finding the difference between prediction and actual outputs. Differencing occurs by subtracting the previous observation from the current observation to remove temporal dependence.
+
+```{r}
+# Detrend data
+# 1) Regress energy productino on year
+fit = lm(energy_sources$Output~time(energy_sources$YEAR), na.action=NULL)
+#fit
+
+# Difference data
+# 1st difference
+energy_sources$Output %>% diff() %>% ggtsdisplay(main="First Difference")
+
+# 2nd difference
+energy_sources$Output %>% diff() %>% diff() %>% ggtsdisplay(main="Second Difference")
+
+
+# Compare ACF plots for original, detrended, and differenced data
+plot1 <- ggAcf(energy_sources$Output, 48, main="Original Data")
+plot2 <- ggAcf(resid(fit), 48, main="detrended data")
+plot3 <- ggAcf(diff(energy_sources$Output), 48, main="first differenced data")
+
+grid.arrange(plot1, plot2, plot3,ncol=3)
+```
+
+The original data was already fairly stationary - as de-trending the data didn't change the lagged correlations at all. Correlations still exist for lags every 5 years (very cyclical), but the data has a constant mean and variance across time making it at least weakly stationary. Differencing was performed to see how the data would behave - and it was likely unnecessary given that the original data was already stationary.<br>
+
+### 5) Augmented Dickey-Fuller Test
+
+ADF is used to check that the data is stationary<br>
+
+```{r}
+tseries::adf.test(energy_sources$Output)
+```
+
+The Augmented Dickey-Fuller tests are used to assess how stationary the data is. An ADF test of all energy production outputs produced a p-value of 0.01. Thus, we can reject the null hypothesis of no stationarity at the 1% level - indicating that this series does in fact exhibit stationarity. This aligns with findings from the ACF plots above. <br><br>
+
+### 6) Moving Average Smoothing <br>
+
+This smoothing helps identify underlying patterns, especially because of the lack of seasonality in the data. Three different MA windows for smoothing are selected: 5,10,20.
+
+The order of SMA tells us the number of data points used to calculate the moving average. Thus, a window of 5 will be more responsive to short-term fluctuations and exhibit more details of the trend over a shorter time frame. An order of 20 is far smoother, and less responsive to year to year events.
+
+```{r}
+# Determine the right order
+sma(ets, order=5, silent=FALSE)
+sma(ets, order=10, silent=FALSE)
+sma(ets, order=20, silent=FALSE)
+```
+
+From this exploration, it seems that SMA with an order of 10 smoothing is the best for the data. The yearly data required a fairly small order for smoothing given the sparse nature of the data points. A window of 10 minimized the information criteria (AIC, BIC, AICc) and provided the best smoothing of data fluctuations and view into the underlying trends. From this we can see that the trend in electricity production is steadily increasing between 1990 -1995 before beginning a slow descent down to 2005.
+
+<br> <br>
+
+## Dataset 2 - Petroleum Exports vs. Imports
+
+```{r, include=FALSE}
+petroleum <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/petroleum_clean.csv")
+
+petroleum <- petroleum %>%
+  filter(Value != "Not Available") %>%
+  mutate(Value = as.double(Value)) %>%
+  filter(Description == c("Petroleum Exports", "Petroleum Imports", "Total Petroleum Field Production"))
+
+# Fix year for imports
+index <- petroleum$Description == "Petroleum Imports"
+petroleum$year[index] <- (petroleum$year[index] + 1)
+
+# Drop extra imports
+petroleum <- petroleum %>%
+  filter(year != 2022)
+```
+
+### 1) Identify time series components of data
+
+<br> Below is the unaltered time series. The data contains **Petroleum Imports, Exports, and Total Field Production** in thousands of barrels per day between 1990 and 2022.
+
+```{r}
+ggplot(petroleum, aes(x = year, y = Value, color=Description)) +
+  geom_line() +
+  labs(
+    title = "United States Petroleum Imports vs. Exports",
+    subtitle = "From 1950 - 2020",
+    x = "Year",
+    y = "Thousands of Barrels/Day")+
+    guides(colour=guide_legend(title="Description")) 
+```
+
+Initial examination of the data suggests that petroleum imports and exports both trended upwards, likley in response to energy usage and dependence in the U.S. increasing over the time interval. Total petroleum field production may also trend upwards - although there is more randomness to its behavior. Only annual data is available - hence seasonality cannot be surmised here, but there may be some slight cyclicality to petroleum exports. Furthermore, it's plausible that petroleum imports may be tied to the economy and grow during bull and crash during bear markets; however, further examination is needed to assess this hypothesis.
+
+### 2) Lag Plots
+
+Lag plots are again used to examine autocorrelation between the time series and itself - i.e. do current petroleum imports and exports impact future petroleum imports and exports?
+
+```{r}
+# Create time series objects
+import_ts <- ts(filter(petroleum, Description=="Petroleum Imports")$Value, start = c(1950,1), frequency=1)
+export_ts <- ts(filter(petroleum, Description=="Petroleum Exports")$Value, start = c(1950,1), frequency=1)
+production_ts <- ts(filter(petroleum, Description=="Total Petroleum Field Production")$Value, start = c(1950,1), frequency=1)
+```
+
+#### 1 Year, 2 Year, 10 Year, 20 Year Lags in Petroleum Imports
+
+```{r}
+ts_lags(import_ts, lags=c(1,2,10, 20))
+```
+
+#### 1 Year, 2 Year, 10 Year, 20 Year Lags in Petroleum Exports
+
+```{r}
+ts_lags(export_ts, lags=c(1,2,10, 20))
+```
+
+#### 1 Year, 2 Year, 10 Year, 20 Year Lags in Petroleum Total Field Production
+
+```{r}
+ts_lags(production_ts, lags=c(1,2,10, 20))
+```
+
+Petroleum imports show weak autocorrelation with lags 1, 2 and 10 - weakening over time. By lag 20 there is no correlation between the time series and the lagged values (it's just random). Petroleum exports show stronger autocorrelation with lags 1 and 2, while the lagged values at lags 10 and 20 are random and not correlated with the time series. Petroleum total field production shows no autocorrelation with itself across any lag period.
+
+***We can explain these results with intuition: Petroleum imports and exports are largely dependent on foreign policy, international crises, domestic policy affecting drilling permits, and supply and demand for petroleum. These external factors play a much larger role in determining imports and exports than previous years' values of imports and exports. There is a weak correlation between lag 1 and 2 as often the same external factors (i.e. policy or crisis) are in play for multiple years and therefore closely grouped years exhibit similar behavior. But this explains why there is very little correlation with lagged period greater than 2 years.***
+
+<br>
+
+### 3) Decompose Data
+
+```{r}
+import <- filter(petroleum, Description=="Petroleum Imports")
+export <- filter(petroleum, Description=="Petroleum Exports")
+production <- filter(petroleum, Description=="Total Petroleum Field Production")
+
+pts <- ts(data.frame(IMPORTS=import$Value, EXPORTS=export$Value, PRODUCTION=production$Value), star=decimal_date(as.Date("1945-01-01")), frequency = 1)
+
+# print("Trend of Imports, Exports, Production")
+# autoplot(decompose(pts)$trend)
+# 
+# print("Seasonality")
+# autoplot(decompose(pts)$seasonal)
+# 
+# print("Random")
+# autoplot(decompose(pts)$random)
+```
+
+The data cannot be decomposed because it does not exhibit seasonality. See SMA (Simple moving average) below for more information on its behavior.
+
+<br>
+
+### 4) ACF/PACF Plots
+
+<br>
+
+#### Detrending
+
+None of the series exhibit stationarity so detrending must be undertaken for all three.
+
+```{r}
+# Detrend data
+fit_import = lm(import$Value~time(import$year), na.action=NULL)
+fit_export = lm(export$Value~time(export$year), na.action=NULL)
+fit_prod = lm(production$Value~time(production$year), na.action=NULL)
+
+print("Original import data vs. detrended import data")
+# Compare ACF plots for original, detrended data
+plot1 <- ggAcf(import$Value, 48, main="Original Import Data")
+plot2 <- ggAcf(resid(fit_import), 48, main="detrended import data")
+grid.arrange(plot1, plot2,ncol=2)
+
+print("Original export data vs. detrended export data")
+# Compare ACF plots for original, detrended data
+plot1 <- ggAcf(export$Value, 48, main="Original Export Data")
+plot2 <- ggAcf(resid(fit_export), 48, main="detrended export data")
+grid.arrange(plot1, plot2,ncol=2)
+
+print("Original field production data vs. detrended field production data")
+# Compare ACF plots for original, detrended data
+plot1 <- ggAcf(production$Value, 48, main="Original Production Data")
+plot2 <- ggAcf(resid(fit_prod), 48, main="detrended production data")
+grid.arrange(plot1, plot2,ncol=2)
+```
+
+The ACF and PACF plots for Imports, Exports, and Production Totals illustrate that the data does actually have some seasonality given the sinusoidal curves demonstrated across all three. Detrending *imports* eliminated autocorrelation between the time series and lags 2,3, and 4. Interestingly, detrending export and production did not significantly change the correlations across lags - which is especially bizarre given that the ADF Tests (below) return extremely high p values - meaning we strongly fail to reject the null hypothesis of no stationarity.
+
+### 5) Augmented Dickey-Fuller Test
+
+We mathematically examine stationarity of Imports, Exports, and Production data using the ADF Test on detrended data below.
+
+```{r}
+tseries::adf.test(resid(fit_import))
+tseries::adf.test(resid(fit_export))
+tseries::adf.test(resid(fit_prod))
+```
+
+Even after detrending the data does not exhibit stationarity via the ADF test! Thus, differencing is used to generate stationary data.
+
+##### Differencing Imports, Exports, and Production --\> ADF Test
+
+**Log() transformations are employed on Exports and Production data due to the high degrees of non-stationarity.**
+
+#### Imports
+
+```{r}
+# Imports
+ggAcf(import$Value %>% diff() %>% diff(), 48, main="Twice Differenced Import Data")
+tseries::adf.test(import$Value %>% diff() %>% diff())
+```
+
+#### Exports
+
+```{r}
+# Exports
+ggAcf(log(export$Value) %>% diff() %>% diff(), 48, main="Log(Exports) - Twice Differenced")
+tseries::adf.test(log(export$Value) %>% diff() %>% diff())
+```
+
+```{r}
+# Production
+ggAcf(log(production$Value) %>% diff() %>% diff(), 48, main="Log(Production) - Twice Differenced")
+tseries::adf.test(log(production$Value) %>% diff() %>% diff())
+```
+
+Finally, after using log() transformations on Exports and Production data, and twice differencing all three series - stationarity is achieved. This data has a strong upwards trends and lack of cyclicality and seasonality - making it complicated to coerce into stationary behavior.
+
+<br>
+
+### 6) Moving Average Smoothing
+
+<br>
+
+This smoothing helps identify underlying patterns, especially because of the lack of seasonality in the data. Three different MA windows for smoothing are selected: 3,5,10.
+
+```{r}
+# Determine the right order
+sma(pts, order=3, silent=FALSE)
+sma(pts, order=5, silent=FALSE)
+sma(pts, order=10, silent=FALSE)
+```
+
+SMA was again used to remove noise and identify trends in the petroleum exports vs imports data. From examination of a few different SMA windows (3,5,10), order 5 is selected. From this it's clear that petroleum imports and exports have trended up throughout the time period of examination and the major spikes and dips in production have been smoothed out.
+
+## Dataset 3 - Cost of Energy
+
+For this dataset, I examine the total cost of energy across multiple sources: **coal, natural gas, biomass, petroleum, wind, etc.**
+
+```{r}
+# Load in data
+cost <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/Price_Clean.csv", skip=2)
+```
+
+### 1) Identify time series components of data
+
+<br>
+
+```{r}
+ggplot(cost, aes(x=Year, y=Total)) +
+  geom_line() +
+  labs(
+    title = "Total Cost of Electricity in the US 1970 - 2010",
+    x = "Year",
+    y = "Dollars per Million Btu"
+  ) +
+  theme_minimal()
+```
+
+The basic time series plot of total cost of electricity in the US shows some interesting patterns. There's a definite upwards trend due to inflation and rising cost of goods and services, as well as some fluctuations that appear to be cyclical. It doesn't look like there's much seasonality in this data but the cyclicality will be examined.
+
+The cost of electricity had a local peak in 1983 - during the oil crisis in the US - and then again began to rise exponentially in the early 2000s. This coincided with the US' maximum petroleum imports and the rise of natural gas as the dominent energy source. The cost of electricity dropped in 2008 due to the global financial crisis, and then steadily rose until the end of the timeframe examined (2010).
+
+### 2) Lag Plots
+
+<br>
+
+```{r}
+# Create time series objects
+cost_ts <- ts(cost$Total, start = c(1970,1), frequency=1)
+```
+
+#### 1 Year, 2 Year, 10 Year, 20 Year Lags in Petroleum Imports
+
+```{r}
+ts_lags(cost_ts, lags=c(1,2,10, 20))
+```
+
+There is a weak correlation between the time series and lag 1, and an even weaker correlation with lag 2. Values at lags 10 and 20 don't appear to be correlated with the time series at all. This is somewhat surprising, as the cost of electricity is tied to external factors (such as global fuel supply) but prices are also tied to the US economy which is highly cyclical. I expected the 10 and 20 year lags to be correlated to the time series due to economic cycles but that does not appear in the data.
+
+### 3) Decompose data
+
+<br>
+
+```{r}
+cost_ts <- ts(cost$Total, start = c(1970,1), frequency=2)
+autoplot(decompose(cost_ts, "additive"))
+```
+
+Through decomposition of the time series, a more concrete idea of the trend and seasonality appears. The data is indeed trending upwards, with a spike in the early 2000s and a crash during the 2008 financial crisis. There is some seasonal variation - and it is certainly *additive* based on the decomposition plot.
+
+### 4) ACF/PACF Plots
+
+<br>
+
+Again, this data is certainly not stationary so de-trending is potentially helpful. ACF/PACF plots are compared for both the original and de-trended data.
+
+```{r}
+# Detrending 
+fit_cost = lm(cost$Total~time(cost$Year), na.action=NULL)
+
+print("Original electricity cost data vs. detrended electricity cost data")
+# Compare ACF plots for original, detrended data
+plot1 <- ggAcf(cost$Total, 48, main="Original Cost Data")
+plot2 <- ggAcf(resid(fit_cost), 48, main="detrended cost data")
+grid.arrange(plot1, plot2,ncol=2)
+```
+
+The data is clearly not stationary, as there is a gradual weakening of the correlation with lagged values until lag 10, and then a large spike of negatively correlated lagged values around lags 30-40. This negative correlation is reflective of the strong upward trend over time as well as the exponential price growth in the early 2000s. The mean, variance, and autocorrelation pattern are not consistent over time and therefore the data does not have stationarity.
+
+To address this, I tried basic detrending mechanisms, but this did not coerce the data into stationarity. The ADF Test below confirms this. Thus, differencing was undertaken to achieve the desired stationary behavior.
+
+### 5) Augmented Dickey-Fuller Test
+
+<br>
+
+```{r}
+tseries::adf.test(resid(fit_cost))
+```
+
+With a p-value of 0.4071, we fail to reject the null hypothesis that the detrended data doesn't have stationarity.
+
+```{r}
+# Differenced
+ggAcf(log(cost$Total) %>% diff(), 48, main="Log(Electricity Cost) - Order 1 Differenced")
+tseries::adf.test(log(import$Value) %>% diff())
+```
+
+In order to coerce the cost of electricity data into having stationary properties, the data is transformed via log() and then differenced once. After transformation and differencing, the ACF plot indicates no lags that are statistically significantly correlated with the time series and the mean, variance, and autocorrelation function behavior are constant over time.
+
+Additionally, now the ADF test returns a p value of 0.04149 which is statistically significant at the 5% level. Thus, we can now reject the null hypothesis that the data is not stationary and proceed with future modeling.
+
+<br>
+
+### 6) Moving Average Smoothing
+
+<br>
+
+This smoothing helps identify underlying patterns, especially because of the lack of seasonality in the data. Three different MA windows for smoothing are selected: 3,5,10.
+
+```{r}
+# Determine the right order
+sma(cost_ts, order=5, silent=FALSE)
+sma(cost_ts, order=10, silent=FALSE)
+sma(cost_ts, order=15, silent=FALSE)
+```
+
+SMA was again used to remove noise and identify trends in the cost of energy. From examination of a few different SMA windows (5,10,15), order 10 is selected. From this it's clear that electricity prices have trended up throughout the time period of examination and the major spikes and dips in production have been smoothed out.
+
+## Dataset 4 - CO2 Emissions
+
+For this dataset, I examine CO2 emissions by month since 1973. I focus on 4 emissions sources: Coal, Hydrocarbon Gas, Natural Gas, and Petroleum.
+
+```{r, warning=FALSE}
+# Load in data
+co2 <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/CO2.csv")
+# Unit is Million Metric Tons of Carbon Dioxide
+
+# Clean data
+co2 <- co2 %>%
+  select(-c("MSN", "Column_Order", "Unit")) %>%
+  mutate(YYYYMM = as.Date(paste0(as.character(YYYYMM), '01'), format='%Y%m%d'))
+  #pivot_wider(names_from=Description, values_from=Value)
+
+co2 <- na.omit(co2) # Remove NAs
+# colnames(co2) <- c('Date', 'Aviation', 'Coal', 'Distillate Fuel Oil', 'Hydrocarbon', 'Jet Fuel', 'Kerosene', 'Lubricants', 'Motor Gasoline', 'Natural', 'Other Petroleum', 'Petroleum', 'Petroleum2', 'Fuel Oil', 'Total Energy')
+
+# Look just at Coal, Hydrocarbon, Natural Gas, Petroleum
+coal=co2 %>%
+  filter(Description=="Coal, Including Coal Coke Net Imports, CO2 Emissions")
+hydro=co2 %>%
+  filter(Description=="Hydrocarbon Gas Liquids CO2 Emissions")
+natgas=co2 %>%
+  filter(Description=="Natural Gas, Excluding Supplemental Gaseous Fuels, CO2 Emissions")
+petro=co2 %>%
+  filter(Description=="Petroleum Coke CO2 Emissions")
+```
+
+### 1) Identify time series components of data
+
+<br>
+
+```{r}
+ggplot(coal, aes(x=YYYYMM, y=Value, colour="Coal")) +
+  geom_line() +
+  geom_line(data = hydro, aes(x=YYYYMM,y=Value, colour="Hydrocarbon Gas")) +
+  geom_line(data = natgas, aes(x=YYYYMM,y=Value, colour="Natural Gas")) +
+  geom_line(data = petro, aes(x=YYYYMM,y=Value, colour="Petroleum")) +
+  labs(
+    title = "Total CO2 Emissions From Various Sources 1973 - 2022",
+    x = "Year",
+    y = "Million Metric Tons of Carbon Dioxide"
+  ) +
+  guides(colour=guide_legend(title="Energy Source")) +
+  theme_minimal()
+```
+
+The basic time series plot of total CO2 emissions by source shows some interesting patterns. Emissions from all four sources exhibit seasonality, probably because people use more fuel in the summer when it's hot and ACs are running. Coal saw an upward trend from 1973-2007, and has since trended downwards. Natural gas trends upwards, overtaking coal as the leading emissions source in the middle 2010s. Hydrocarbon and Petroleum are both minor contributors to US CO2 emissions relative to Coal and Natural Gas - but they may exhibit slight seasonality as well.
+
+### 2) Lag Plots
+
+<br> Examining lags in time series data highlights any potential correlations between steps along the time interval --\> i.e. is energy production at time t correlated with energy production at time t-1? Does the previous year's energy production impact energy production in future years (e.g. perhaps because of investments made in infrastructure or the passage of legislation that would affect production). Lag plots also help to understand any potential seasonality in the data.
+
+```{r}
+# Create time series objects
+coal_ts <- ts(coal$Value, start = c(1973,1), frequency=12)
+hydro_ts <- ts(hydro$Value, start = c(1973,1), frequency=12)
+petro_ts <- ts(petro$Value, start = c(1973,1), frequency=12)
+natural_ts <- ts(natgas$Value, start = c(1973,1), frequency=12)
+```
+
+#### 1 month, 6 month, 1 year, 5 year Lags in Coal CO2 Emissions
+
+```{r}
+ts_lags(coal_ts, lags=c(1,6,12, 60))
+```
+
+#### 1 month, 6 month, 1 year, 5 year Lags in Hydrocarbon Gas CO2 Emissions
+
+```{r}
+ts_lags(hydro_ts, lags=c(1,6,12,60))
+```
+
+#### 1 month, 6 month, 1 year, 5 year Lags in Petroleum Gas CO2 Emissions
+
+```{r}
+ts_lags(petro_ts, lags=c(1,6,12, 60))
+```
+
+#### 1 month, 6 month, 1 year, 5 year Lags in Natural Gas CO2 Emissions
+
+```{r}
+ts_lags(natural_ts, lags=c(1,6,12,60))
+```
+
+In coal production, there's a weak autocorrelation between the data and a 1 month lag, indicating that there is some connection between month to month production but other factors may play a larger role. Lags 6 and 60 are essentially random; thus, it's likely that there isn't a correlation between the time series data and 6 month effects or lags farther away. Lag 12 shows the strongest correlation - indicating that there's a strong relationship in CO2 emissions from coal on a yearly basis.
+
+Emissions from hydrocarbon gas are strongly correlated with 1 month lag, 6 month lag, and 12 month lag. This indicates that there are strong seasonal effects year to year in emissions/usage of Natural Gas, as well as trends upwards over time in NatGas usage that lead to correlations month to month as well.
+
+Petroleum Gas exhibited very weak correlations across lags examined. Even the 1 month and 1 year lags were only weakly autocorrelated so there may be less seasonality at play with emissions here.
+
+Finally, Natural gas is HIGHLY correlated across lats. Lag 12 (1 year lag) shows a very strong relationship with the time series, with lag 60 (5 year lag) showing another strong relationship. On the other hand, lag 6 is almost randomly related to the time series, so seasonal effects are strong here.
+
+### 3) Decompose data
+
+#### CO2 Emissions from Coal
+
+```{r}
+# ets <- ts(data.frame(COAL=coal$Value, HYDRO=hydro$Value, PETRO=petro$Value, NATGAS=natgas$Value), star=decimal_date(as.Date("1990-01-01")), frequency = 1)
+
+autoplot(decompose(coal_ts, "multiplicative"))
+# print("Trend of CO2 Emissions of Coal")
+# autoplot(decompose(coal_ts)$trend)
+# 
+# print("Seasonality of CO2 Emissions of Coal")
+# autoplot(decompose(coal_ts)$seasonal)
+# 
+# print("Noise of all CO2 Emissions of Coal")
+# autoplot(decompose(coal_ts)$random)
+```
+
+#### CO2 Emissions from Petroleum
+
+```{r}
+autoplot(decompose(petro_ts, "multiplicative"))
+
+# print("Trend of CO2 Emissions of Petroleum")
+# autoplot(decompose(petro_ts)$trend)
+# 
+# print("Seasonality of CO2 Emissions of Petroleum")
+# autoplot(decompose(petro_ts)$seasonal)
+# 
+# print("Noise of all CO2 Emissions of Petroleum")
+# autoplot(decompose(petro_ts)$random)
+```
+
+#### CO2 Emissions from Hydrocarbon gas
+
+```{r}
+autoplot(decompose(hydro_ts))
+
+# print("Trend of CO2 Emissions of Hydrocarbon Gas")
+# autoplot(decompose(hydro_ts)$trend)
+# 
+# print("Seasonality of CO2 Emissions of Hydrocarbon Gas")
+# autoplot(decompose(hydro_ts)$seasonal)
+# 
+# print("Noise of all CO2 Emissions of Hydrocarbon Gas")
+# autoplot(decompose(hydro_ts)$random)
+```
+
+#### CO2 Emissions from Natural Gas
+
+```{r}
+autoplot(decompose(natural_ts, "multiplicative"))
+# print("Trend of CO2 Emissions of Natural Gas")
+# autoplot(decompose(natural_ts)$trend)
+# 
+# print("Seasonality of CO2 Emissions of Natural Gas")
+# autoplot(decompose(natural_ts)$seasonal)
+# 
+# print("Noise of all CO2 Emissions of Natural Gas")
+# autoplot(decompose(natural_ts)$random)
+```
+
+This is the first dataset to truly exhibit seasonal effects. CO2 emissions across all four fuel sources exhibit either multiplicative or additive seasonality, indicating that fuel usage and correlated CO2 emissions are highly periodic and tied to human behavior. In hot months, emissions increase and in cold months they tend to decrease. For 3/4 fuel sources, these seasonal swings are increasing over time, while for hydrocarbon gas these swings are constant over time.
+
+### 4) ACF/PACF Plots <br>
+
+**Note:** Now, with a sense of how these different fuel sources impact CO2 emissions we will be model building and forecasting using Total CO2 Emissions. In a final review, I may dive into individual forecasts if necessary.
+
+Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF) plots are useful for showing the correlation coefficients between a time series and its own lagged values. ACF looks at the time series and previous values of the series measured for different lag lengths - while PACF looks directly at the correlation between a time series and a given lag. Both are also useful for identifying if the data has stationarity - where the mean, variance, and autocorrelation structure do not change over time.
+
+Before building ACF/PACF plots the data is logged and differenced - to examine seasonality and cyclicality directly. Differencing occurs by subtracting the previous observation from the current observation to remove temporal dependence.
+
+```{r, warning=FALSE}
+total = co2%>%
+  filter(Description == "Total Energy CO2 Emissions")
+# Take log of data
+total$log_value <- log(total$Value)
+
+# Difference data
+# 1st difference
+total$log_value %>% diff() %>% ggtsdisplay(main="First Difference")
+
+# Compare ACF plots for original, detrended, and differenced data
+plot1 <- ggAcf(total$log_value, 48, main="Original Data")
+plot2 <- ggAcf(total$log_value%>%diff(), 48, main="First Diff")
+
+grid.arrange(plot1, plot2,ncol=3)
+```
+
+The original data was highly non-stationary - and required logging the value of CO2 emissions, and one difference. Two differences would have overdifferenced and overcomplicated the data. Additionally, with one difference the ADF test below returns a p-value of 0.05. There are still correlated lags at 6,12,24 but those will be explored during model diagnostics. <br>
+
+### 5) Augmented Dickey-Fuller Test
+
+ADF is used to check that the data is stationary<br>
+
+```{r}
+tseries::adf.test(total$log_value %>% diff())
+```
+
+The Augmented Dickey-Fuller tests are used to assess how stationary the data is. An ADF test of all energy production outputs produced a p-value of 0.01. Thus, we can reject the null hypothesis of no stationarity at the 1% level - indicating that this series does in fact exhibit stationarity now. <br><br>
+
+<br> <br>

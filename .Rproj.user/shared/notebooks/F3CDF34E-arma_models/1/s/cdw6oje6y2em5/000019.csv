@@ -1,0 +1,6 @@
+"0",""
+"0","# Create time series objects"
+"0","coal_ts <- ts(coal$log_value, start = c(1973,1), frequency=12)"
+"0","hydro_ts <- ts(hydro$log_value, start = c(1973,1), frequency=12)"
+"0","petro_ts <- ts(petro$log_value, start = c(1973,1), frequency=12)"
+"0","natural_ts <- ts(natgas$log_value, start = c(1973,1), frequency=12)"

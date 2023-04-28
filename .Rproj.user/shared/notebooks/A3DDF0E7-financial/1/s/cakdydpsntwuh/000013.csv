@@ -1,0 +1,2 @@
+"0","log.nee <- log(ts.nee)"
+"0","log.nee %>% diff() %>% ggtsdisplay()"

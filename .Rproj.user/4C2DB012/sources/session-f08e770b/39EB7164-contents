@@ -1,0 +1,302 @@
+---
+title: "Lab 9 Assignment"
+author: "Elise Rust"
+output: rmdformats::material
+---
+
+```{r ,echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(astsa) 
+library(xts)
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(tidyverse)
+library(TSstudio)
+library(quantmod)
+library(XML)
+library(plotly)
+library(ggplot2)
+#library(Matrix)
+library(fGarch)
+```
+
+# Problem 1
+
+Fit ARCH models for Tesla stock prices as we have been looking at it through out the semester. Fit a suitable 
+
+### Case 1:  Just ARCH model using the squared returns. 
+### Case2: ARIMA+ARCH/ARMA+ARCH using only the logged transformed values or using the differenced log values(respectively). 
+
+(You can follow the analysis as we did in the Lab for "APPL")
+
+### Questions:
+
+```{r}
+# Load the data
+options("getSymbols.warning4.0"=FALSE)
+options("getSymbols.yahoo.warning"=FALSE)
+
+tickers = c("TSLA")
+#stockEnv <- new.env()
+
+#symbols <- getSymbols(tickers, src="yahoo", env=stockEnv, from = "2012-10-01", to="2022-12-01")
+for (i in tickers){
+  getSymbols(i,
+             from = "2012-10-01",
+             to = "2022-12-01")}
+
+x <- list(
+  title = "date"
+)
+y <- list(
+  title = "value"
+)
+
+stock <- data.frame(TSLA$TSLA.Adjusted)
+stock_all <- data.frame(TSLA) # Get open, close, high, low for candlestick
+
+# Fix datetime
+stock <- data.frame(stock,rownames(stock))
+colnames(stock) <- append(tickers,'Dates')
+stock$Dates<-as.Date(stock$Dates,"%Y-%m-%d")
+head(stock)
+
+stock_all <- data.frame(stock_all,rownames(stock_all))
+colnames(stock_all) <- c("TSLA.Open", "TSLA.High", "TSLA.Low", "TSLA.Close", "TSLA.Volume", "TSLA.Adjusted", "Dates")
+stock_all$Dates<-as.Date(stock_all$Dates,"%Y-%m-%d")
+head(stock_all)
+```
+
+a. EDA: Look at the candlestick plot of the _TSLA prices_ for the past years (You can either use chartSeries or plotly) and then plot the returns(use adjusted closing prices to calculate the returns). Interpret your graphs.
+
+```{r}
+#plotly
+# candlestick plot
+figc <- stock_all %>% plot_ly(x = ~Dates, type="candlestick",
+          open = ~TSLA.Open, close = ~TSLA.Close,
+          high = ~TSLA.High, low = ~TSLA.Low) 
+figc <- figc %>% layout(title = "TSLA Stock Prices 2012-2022")
+
+figc
+
+# Create ts object
+ts.tsla <- ts(stock$TSLA, start=decimal_date(as.Date("12-10-01")), frequency = 12)
+# Returns
+returns = diff(log(ts.tsla))
+chartSeries(returns, theme="white")
+```
+
+**Analysis: ** From this candlestick plot of TSLA stock between 2012-2022, we can see that between 2012-2020 Tesla stock was pretty consistently below 50. However, during 2020 Tesla stock skyrocketed - from 117 billion in total valuation to 653 billion by the end of the year. According to [investopedia](https://www.investopedia.com/why-tesla-skyrocketed-during-pandemic-5211590), Tesla's stock grew so much due to an "assortment of investment products - options, equity-linked funds, climate tech-focused investment vehicles - which exert a massive influence on the equity and derivatives market." Since this takeoff, it continued its meteoric rise into 2022, peaking with a share price of $409 in November of 2021. 2022 was a tough year for Tesla, as the company missed deliveries target, saw slowing demand for the vehicles, and got tangled up in Elon Musk's Twitter bid. Musk using Telsa stock as collateral for Twitter has spooked investors and dropped the stock price.
+
+The returns plot is a scatter plot of the stock returns - showing the relationship between the current return of a stock and the previous return. From the returns plot above, it looks like the relationship is non-linear, indicating that there may be some pattern of dependencies in the stock returns that can be exploited for forecasting. There is also clustering, happening around '16 and '20 - indicating volatility clustering that can be modeled using an ARCH model.
+
+
+b. Look at the acf and pacf of the returns. What can you observe?
+
+```{r}
+# 252 days of active stock days
+acf(returns, na.action = na.pass)
+pacf(returns, na.action = na.pass)
+```
+The ACF/PACF plot of returns show lags can be used to model the conditional variance, and conditional mean, respectively. For the ACF, there is a spike at lag 0, so ARCH(0) is worth investigating. For the PACF, there are statistically significant spikes at lags 0.6 and 2.0. so an AR(k) model could be appropriate.
+
+c. Look at the acf of the absolute returns and squared returns. What can you observe?
+```{r}
+acf(abs(returns))
+acf(returns^2)
+pacf(returns^2)
+```
+The ACF of absolute returns helps identify any remaining dependence structures not captured by ARCH/GARCH. This plot shows numerous statistically significant lags, all the way up to 3.0, indicating that there the ARCH/GARCH model is certainly not enough. This is confirmed by ACF/PACF plots of returns(^2) as well.
+
+The ACF/PACF plot of returns(^2) help determine if ARCH is sufficient, or whether an ARIMA model needs to be fit. From the ACF plot, I can observe that lags 0-0.5 are correlated with the time series.  From the PACF plot I can observe that lags 0-0.5 are again correlated with the time series. Because there are still significant lags on both plots, an ARIMA model should be fitted first and an ARCH model can be fitted to the residuals of the ARIMA model.
+
+d. Do you need to fit ARMA+ARCH/ARIMA+ARCH or just ARCH model is enough?
+
+Based on the above analysis, it is clear that I need to fit an ARIMA+ARCH/ARIMA+Arch model. The ARCH model is not enough as it doesn't capture all of the dependencies in the data - instead I will fit an ARMA/ARIMA model and an ARCH model will be fit on the residuals.
+
+e. Fit the models specified in 2 cases above for the returns.
+
+**Case 1** Just ARCH model using squared returns
+
+Look at PACF to find p for ARCH(p)
+```{r}
+pacf(returns^2) #p=1,2,3
+```
+
+Fit a few models - p=1,2,3
+```{r}
+# P=1
+arch.fit1 <- garchFit(~garch(1,0), data = returns, trace = F)
+#summary(arch.fit1)
+# P=2
+arch.fit2 <- garchFit(~garch(2,0), data = returns, trace = F)
+#summary(arch.fit2)
+# P=3
+arch.fit3 <- garchFit(~garch(3,0), data = returns, trace = F)
+#summary(arch.fit3)
+```
+Choose model with minimum AIC
+```{r}
+ARCH <- list() ## set counter
+cc <- 1
+for (p in 1:3) {
+ARCH[[cc]] <- garch(returns,order=c(0,p),trace=F)
+cc <- cc + 1
+} 
+
+## get AIC values for model evaluation
+ARCH_AIC <- sapply(ARCH, AIC) ## model with lowest AIC is the best
+which(ARCH_AIC == min(ARCH_AIC))
+cat("Minimum AIC is: ", min(ARCH_AIC))
+```
+
+
+**Case 2: ** ARIMA/ARMA + ARCH
+Either using logged transformed values, or differenced log values (respectively)
+
+Data is twice differenced to pass the Ljung-Box Test
+
+```{r}
+# The data is not stationary, so we difference it until it's at least weakly stationary
+log.tsla = log(ts.tsla)
+log(ts.tsla) %>% diff() %>% diff() %>% ggtsdisplay()
+Box.test(log(ts.tsla) %>% diff() %>% diff(),type = "Ljung")
+```
+Fix models - compare parameters
+p: 1,2
+q:1-5
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+i=1
+tsla= data.frame()
+ls=matrix(rep(NA,6*26),nrow=26) # roughly nrow = 2x5x3
+
+
+for (p in 2:3)# p=1,2
+{
+  for(q in 2:6)# q=1,2,3,4,5
+  {
+    for(d in 1:3)# 0,1,2
+    {
+      
+      if(p-1+d+q-1<=8)
+      {
+        
+        model<- Arima(log.tsla,order=c(p-1,d,q-1),include.drift=TRUE) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+        #print(i)
+        
+      }
+      
+    }
+  }
+}
+
+tsla= as.data.frame(ls)
+names(tsla)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(tsla)
+```
+
+```{r}
+# select best ARIMA model
+tsla[which.min(tsla$AIC),] # 2,1,2
+tsla[which.min(tsla$BIC),] # 1,1,1
+tsla[which.min(tsla$AICc),] # 2,1,2
+```
+
+Using ARIMA(2,1,2), fit the model 
+```{r, warning=FALSE}
+# Diagnostics
+sarima(log.tsla, 2,1,2)
+
+# Fit
+arima1=arima(log.tsla,order=c(2,1,2))
+summary(arima1)
+```
+Now fit an ARCH model using the residuals of ARIMA(2,1,2)
+
+Squared residuals plot shows a cluster of volatility, the ACF plot shows no significant spikes. PACF shows spikes at 1,2,3. ARCH model will be used to model volatility of the series (ARCH(1) - ARCH(3) per PACF plot).
+```{r}
+res.arima1=arima1$res
+squared.res.arima1=res.arima1^2
+
+plot(squared.res.arima1,main='Squared Residuals')
+pacf.squared1=pacf(squared.res.arima1,main='PACF Squared Residuals')
+
+# FIT ARCH models
+ARCH <- list() ## set counter
+cc <- 1
+for (p in 1:3) {
+ARCH[[cc]] <- garch(res.arima1,order=c(0,p),trace=F)
+cc <- cc + 1
+} 
+
+## get AIC values for model evaluation
+ARCH_AIC <- sapply(ARCH, AIC) ## model with lowest AIC is the best
+which(ARCH_AIC == min(ARCH_AIC))
+cat("Minimum AIC is: ", min(ARCH_AIC))
+```
+It looks like ARCH(3) on the residuals of ARIMA(2,1,2) produces the lowest AIC and is therefore the optimal ARIMA+ARCH model.
+
+
+f. Compare your results using AIC,BIC values and model diagnostics.
+
+Model diagnostics were performed before each model fitting. To summarize the comparison between the two models:
+
+Case 1: ARCH(k), the optimal model chosen was ARCH(3), which has an AIC value of -10081.24.
+```{r}
+arch03=garch(returns,order=c(0,3), trace=F)
+AIC(arch03)
+```
+
+Case 2: ARIMA+ARCH, the optimal model chosen was ARIMA(2,1,2)+ARCH(3), which has an AIC value of -10103.63.
+```{r}
+arima_arch03=garch(res.arima1,order=c(0,3),trace=F)
+AIC(arima_arch03)
+```
+
+g. Which model is the best? Case 1 model or model 2?
+
+Thus, it looks like model 1 is slightly better than model 2 - given that ARCH(3) has a lower AIC value. AIC is not the only measure of goodness of fit, but using AIC we find ARCH(3) to be better.
+
+h. Check the volatility graph to see any notable impact on any world effect.
+
+```{r}
+returns = diff(log(ts.tsla))
+arch.fit <- garchFit(~garch(3,0), data=returns, trace=F)
+stock <- stock[-1,]
+stock$ht <- arch.fit@h.t #a numeric vector with the conditional variances (h.t = sigma.t^delta)
+
+ggplot(stock, aes(y = ht, x = Dates)) + geom_line(col = '#ff9933') + ylab('Conditional Variance') + xlab('Date')
+```
+From this plot we can identify periods of high volatility. The highest volatility was in 2020, when the pandemic hit and then Tesla stocks plummeted in late 2021.
+
+
+# Problem 2 (NO need to submit but PRACTICE)
+
+Now, that you have a rudimentary understanding of the ARCH(p) model, as an exercise, try modeling the volatility of  other cryptocurrencies other than bitcoins and see if you can spot anything interesting.
+
+_A cryptocurrency (or “crypto”) is a digital currency that can be used to buy goods and services, but uses an online ledger with strong cryptography to secure online transactions. Much of the interest in these unregulated currencies is to trade for profit, with speculators at times driving prices skyward._
+
+
+### Question:
+
+a. EDA: Look at the candlestick plot of the _crypto currency prices_ for the past few years (You can either use chartSeries or plotly) and then plot the returns(use adjusted closing prices to calculate the returns). Interpret your graphs.
+
+b. Look at the acf and pacf of the returns. What can you observe?
+c. Look at the acf of the absolute returns and squared returns. What can you observe?
+d. Do you need to fit AR+ARCH or just ARCH model is enough?
+e. Try to fit both AR(1)+ARCH(p) and a just ARCH(p) model for the returns.
+f. Compare your results using AIC,BIC values and model diagnostics.
+g. Which model is the best?
+h. Check the volatility graph to see any notable impact on the Russian invasion.
+
+
+

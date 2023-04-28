@@ -1,0 +1,4 @@
+"0","require(gridExtra)"
+"0","n1 <- ggAcf(nuclear_ts)"
+"0","n2 <- ggPacf(nuclear_ts)"
+"0","grid.arrange(n1, n2, ncol=2)"

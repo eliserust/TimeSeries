@@ -1,0 +1,3 @@
+"0","fit1=arma(coal_ts, order=c(1,3))"
+"0",""
+"0","plot(coal_ts, col=""blue"")"

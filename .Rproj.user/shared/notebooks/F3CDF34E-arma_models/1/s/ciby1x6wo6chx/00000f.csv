@@ -1,0 +1,5 @@
+"0","energy_sources <- read.csv(""~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/clean_energy_sources.csv"")"
+"0",""
+"0","energy_sources <- energy_sources %>%"
+"0","  mutate(Output = as.double(Output)) %>%"
+"0","  mutate(YEAR = as.Date(ISOdate(YEAR, 1, 1)))  # beginning of year"

@@ -1,0 +1,6 @@
+"0",""
+"0","# Create ts object for returns"
+"0","ts.exxon <- ts(exxon$EXXON_Adj, start=decimal_date(as.Date(""12-10-01"")), frequency = 12)"
+"0","# Returns"
+"0","ex_returns = diff(log(ts.exxon))"
+"0","chartSeries(ex_returns, theme=""white"")"

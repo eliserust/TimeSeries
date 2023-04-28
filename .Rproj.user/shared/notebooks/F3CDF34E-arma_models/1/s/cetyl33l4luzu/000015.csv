@@ -1,0 +1,5 @@
+"0",""
+"0","# Create time series objects"
+"0","import_ts <- ts(filter(petroleum, Description==""Petroleum Imports"")$log_Value, start = c(1950,1), frequency=1)"
+"0","export_ts <- ts(filter(petroleum, Description==""Petroleum Exports"")$log_Value, start = c(1950,1), frequency=1)"
+"0","production_ts <- ts(filter(petroleum, Description==""Total Petroleum Field Production"")$log_Value, start = c(1950,1), frequency=1)"

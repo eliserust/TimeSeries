@@ -1,0 +1,32 @@
+{
+    "id": "07C7A242",
+    "path": "~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/deeplearning.qmd",
+    "project_path": "deeplearning.qmd",
+    "type": "quarto_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1682611132133.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "rmdVisualMode": "true",
+        "rmdVisualWrapConfigured": "true",
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "docOutlineVisible": "1",
+        "rmdVisualCollapsedChunks": "",
+        "cursorPosition": "1,0",
+        "scrollLine": "0",
+        "rmdVisualModeLocation": "2:0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1679061250,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1679061250,
+    "read_only": false,
+    "read_only_alternatives": []
+}

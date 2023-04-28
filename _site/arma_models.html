@@ -1,0 +1,4095 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Energy in the U.S. - ARMA/ARIMA/SARIMA Models</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar docked">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+    <div class="container-fluid d-flex justify-content-between">
+      <h1 class="quarto-secondary-nav-title">ARMA/ARIMA/SARIMA Models</h1>
+      <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Energy in the U.S.</a> 
+    </div>
+      </div>
+      <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">Home</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./aboutme.html" class="sidebar-item-text sidebar-link">About Me</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./introduction.html" class="sidebar-item-text sidebar-link">Introduction</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./datasources.html" class="sidebar-item-text sidebar-link">Data Sources</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dataviz.html" class="sidebar-item-text sidebar-link">Data Visualization</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda.html" class="sidebar-item-text sidebar-link">Exploratory Data Analysis</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./arma_models.html" class="sidebar-item-text sidebar-link active">ARMA/ARIMA/SARIMA Models</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./var.html" class="sidebar-item-text sidebar-link">ARIMAX/SARIMAX/VAR Models</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./financial.html" class="sidebar-item-text sidebar-link">Financial Time Series Models (ARCH/GARCH)</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./deeplearning.html" class="sidebar-item-text sidebar-link">Deep Learning for TS</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./conclusions.html" class="sidebar-item-text sidebar-link">Conclusions</a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dv.html" class="sidebar-item-text sidebar-link">Lab0</a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#dataset-1---electricity-production" id="toc-dataset-1---electricity-production" class="nav-link active" data-scroll-target="#dataset-1---electricity-production">Dataset 1 - Electricity Production</a>
+  <ul class="collapse">
+  <li><a href="#data-review" id="toc-data-review" class="nav-link" data-scroll-target="#data-review">1) Data Review</a></li>
+  <li><a href="#acfpacf-plots" id="toc-acfpacf-plots" class="nav-link" data-scroll-target="#acfpacf-plots">2) ACF/PACF Plots</a></li>
+  <li><a href="#fit-arimapdq-models" id="toc-fit-arimapdq-models" class="nav-link" data-scroll-target="#fit-arimapdq-models">3) Fit ARIMA(p,d,q) models</a></li>
+  <li><a href="#model-diagnostics" id="toc-model-diagnostics" class="nav-link" data-scroll-target="#model-diagnostics">4) Model Diagnostics</a></li>
+  <li><a href="#fit-an-armapq-model-using-auto.arima" id="toc-fit-an-armapq-model-using-auto.arima" class="nav-link" data-scroll-target="#fit-an-armapq-model-using-auto.arima">5) Fit an ARMA(p,q) model using auto.arima()</a></li>
+  <li><a href="#forecast" id="toc-forecast" class="nav-link" data-scroll-target="#forecast">6) Forecast</a></li>
+  <li><a href="#benchmark-methods" id="toc-benchmark-methods" class="nav-link" data-scroll-target="#benchmark-methods">7) Benchmark Methods</a></li>
+  </ul></li>
+  <li><a href="#dataset-2---petroleum-exports-vs.-imports" id="toc-dataset-2---petroleum-exports-vs.-imports" class="nav-link" data-scroll-target="#dataset-2---petroleum-exports-vs.-imports">Dataset 2 - Petroleum Exports vs.&nbsp;Imports</a>
+  <ul class="collapse">
+  <li><a href="#data-review-1" id="toc-data-review-1" class="nav-link" data-scroll-target="#data-review-1">1) Data Review</a></li>
+  <li><a href="#acfpacf-plots-1" id="toc-acfpacf-plots-1" class="nav-link" data-scroll-target="#acfpacf-plots-1">2) ACF/PACF Plots</a></li>
+  <li><a href="#fit-arimapdq-models-1" id="toc-fit-arimapdq-models-1" class="nav-link" data-scroll-target="#fit-arimapdq-models-1">3) Fit ARIMA(p,d,q) models</a></li>
+  <li><a href="#model-diagnostics-1" id="toc-model-diagnostics-1" class="nav-link" data-scroll-target="#model-diagnostics-1">4) Model Diagnostics</a></li>
+  <li><a href="#fit-an-arimapdq-model-using-auto.arima" id="toc-fit-an-arimapdq-model-using-auto.arima" class="nav-link" data-scroll-target="#fit-an-arimapdq-model-using-auto.arima">5) Fit an ARIMA(p,d,q) model using auto.arima()</a></li>
+  <li><a href="#forecast-1" id="toc-forecast-1" class="nav-link" data-scroll-target="#forecast-1">6) Forecast</a></li>
+  <li><a href="#benchmark" id="toc-benchmark" class="nav-link" data-scroll-target="#benchmark">7) Benchmark</a></li>
+  </ul></li>
+  <li><a href="#dataset-3---cost-of-energy" id="toc-dataset-3---cost-of-energy" class="nav-link" data-scroll-target="#dataset-3---cost-of-energy">Dataset 3 - Cost of Energy</a>
+  <ul class="collapse">
+  <li><a href="#data-review-2" id="toc-data-review-2" class="nav-link" data-scroll-target="#data-review-2">1) Data Review</a></li>
+  <li><a href="#acfpacf-plots-2" id="toc-acfpacf-plots-2" class="nav-link" data-scroll-target="#acfpacf-plots-2">2) ACF/PACF Plots</a></li>
+  <li><a href="#fit-arimapdq-models-2" id="toc-fit-arimapdq-models-2" class="nav-link" data-scroll-target="#fit-arimapdq-models-2">3) Fit ARIMA(p,d,q) models</a></li>
+  <li><a href="#model-diagnostics-2" id="toc-model-diagnostics-2" class="nav-link" data-scroll-target="#model-diagnostics-2">4) Model Diagnostics</a></li>
+  <li><a href="#fit-an-arimapdq-model-using-auto.arima-1" id="toc-fit-an-arimapdq-model-using-auto.arima-1" class="nav-link" data-scroll-target="#fit-an-arimapdq-model-using-auto.arima-1">5) Fit an ARIMA(p,d,q) model using auto.arima()</a></li>
+  <li><a href="#forecast-2" id="toc-forecast-2" class="nav-link" data-scroll-target="#forecast-2">6) Forecast</a></li>
+  <li><a href="#benchmark-1" id="toc-benchmark-1" class="nav-link" data-scroll-target="#benchmark-1">7) Benchmark</a></li>
+  </ul></li>
+  <li><a href="#dataset-4---co2-emissions" id="toc-dataset-4---co2-emissions" class="nav-link" data-scroll-target="#dataset-4---co2-emissions">Dataset 4 - CO2 Emissions</a>
+  <ul class="collapse">
+  <li><a href="#data-review-3" id="toc-data-review-3" class="nav-link" data-scroll-target="#data-review-3">1) Data Review</a></li>
+  <li><a href="#acfpacf-plots-3" id="toc-acfpacf-plots-3" class="nav-link" data-scroll-target="#acfpacf-plots-3">2) ACF/PACF Plots</a></li>
+  <li><a href="#fit-sarima-models-and-model-diagnostics" id="toc-fit-sarima-models-and-model-diagnostics" class="nav-link" data-scroll-target="#fit-sarima-models-and-model-diagnostics">3) Fit SARIMA models and Model Diagnostics</a></li>
+  <li><a href="#model-diagnostics-3" id="toc-model-diagnostics-3" class="nav-link" data-scroll-target="#model-diagnostics-3">4) Model Diagnostics</a></li>
+  <li><a href="#fit-a-sarimapdqpdq-model-using-auto.arima" id="toc-fit-a-sarimapdqpdq-model-using-auto.arima" class="nav-link" data-scroll-target="#fit-a-sarimapdqpdq-model-using-auto.arima">5) Fit a SARIMA(p,d,q)(P,D,Q) model using auto.arima()</a></li>
+  <li><a href="#forecast-3" id="toc-forecast-3" class="nav-link" data-scroll-target="#forecast-3">6) Forecast</a></li>
+  <li><a href="#benchmark-2" id="toc-benchmark-2" class="nav-link" data-scroll-target="#benchmark-2">7) Benchmark</a></li>
+  <li><a href="#seasonal-cross-validation" id="toc-seasonal-cross-validation" class="nav-link" data-scroll-target="#seasonal-cross-validation">8) Seasonal Cross Validation</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block">ARMA/ARIMA/SARIMA Models</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p><img src="energy_header.png" class="img-fluid" style="width:100.0%"></p>
+<div class="cell">
+
+</div>
+<section id="dataset-1---electricity-production" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-1---electricity-production">Dataset 1 - Electricity Production</h2>
+<div class="cell">
+
+</div>
+<section id="data-review" class="level3">
+<h3 class="anchored" data-anchor-id="data-review">1) Data Review</h3>
+<p>From <a href="eda.html">EDA</a>, we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we’ll take the log to try to make it at least weakly stationary.</p>
+<p><strong>Log Transform energy production outputs - and plot</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Check if data is now stationary using ACF plot</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>It’s now weakly stationary! No further differencing necessary.</p>
+</section>
+<section id="acfpacf-plots" class="level3">
+<h3 class="anchored" data-anchor-id="acfpacf-plots">2) ACF/PACF Plots</h3>
+<p>ACF/PACF plots are used to select potential p and q values for an ARMA(p,q) model. ARMA is used because no differencing of the data occurred. From these plots, some potential p and q values are selected to fit an ARMA model with. Separate models have to be fit for each energy source, thus separate ACF/PACF plots are shown below.</p>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3,4 <br> Autoregressive term (found from pACF): p - 1</p>
+<p><strong>Nuclear</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3,4,5 <br> Autoregressive term (found from pACF): p - 1</p>
+<p><strong>Wind</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3,4,5<br> Autoregressive term (found from pACF): p - 1</p>
+<p><strong>Solar</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3 <br> Autoregressive term (found from pACF): p - 1</p>
+</section>
+<section id="fit-arimapdq-models" class="level3">
+<h3 class="anchored" data-anchor-id="fit-arimapdq-models">3) Fit ARIMA(p,d,q) models</h3>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1319.547</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1325.199</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1312.109</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1313.924</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Nuclear</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1213.296</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1212.388</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1214.309</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1225.694</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1229.118</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Wind</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1144.565</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1147.529</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1148.876</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1147.240</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1150.403</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Solar</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1069.721</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1063.944</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1073.950</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="model-diagnostics" class="level3">
+<h3 class="anchored" data-anchor-id="model-diagnostics">4) Model Diagnostics</h3>
+<p>With the above exploration, a best fit model is chosen for each energy source by minimizing AIC.</p>
+<p><strong>Coal</strong></p>
+<p>The ARMA(p,q) model that minimizes AIC is ARMA(1,3).</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arma(x = coal_ts, order = c(1, 3))
+
+Model:
+ARMA(1,3)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-467564239 -111368527   52069246  112738236  326924565 
+
+Coefficient(s):
+            Estimate  Std. Error    t value Pr(&gt;|t|)    
+ar1        1.074e+00   9.793e-03    109.664   &lt;2e-16 ***
+ma1       -3.294e-01   2.462e-01     -1.338   0.1810    
+ma2       -3.552e-02   6.203e-01     -0.057   0.9543    
+ma3        5.782e-01   2.625e-01      2.203   0.0276 *  
+intercept -2.978e+08   1.120e+04 -26602.741   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Fit:
+sigma^2 estimated as 2.75e+16,  Conditional Sum-of-Squares = 7.701038e+17,  AIC = 1312.11</code></pre>
+</div>
+</div>
+<p>ARMA(1,3) for coal produces an AIC value of 1312.11 and a CSS value of 7.7x10^17. Using the model summary and plot of the model against the data above, it seems that the model fits the data pretty well but not perfectly. The randomness and sensitivity of the original data makes it hard for the model to truly fit well without overfitting. To achieve a better fit would require overfitting the training data and wouldn’t generalize well to new data.</p>
+<p><span class="math display">\[
+\phi(B) = 1 - 1.07(B)
+\]</span> <span class="math display">\[
+\theta(B) = 1 + 3.29*10^-1 *(B) + 3.552*10^-2*(B^2) - 5.782*10^-1*(B^3)
+\]</span></p>
+<p><strong>Nuclear</strong></p>
+<p>The ARMA(p,q) model that minimizes AIC is ARMA(1,2).</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arma(x = nuclear_ts, order = c(1, 2))
+
+Model:
+ARMA(1,2)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-114143177  -26807890    5091034   22515762   52763712 
+
+Coefficient(s):
+            Estimate  Std. Error   t value Pr(&gt;|t|)    
+ar1        8.976e-01   3.176e-03   282.600   &lt;2e-16 ***
+ma1        5.650e-02   1.914e-01     0.295   0.7678    
+ma2       -3.256e-01   1.744e-01    -1.868   0.0618 .  
+intercept  1.657e+08   7.670e+03 21598.292   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Fit:
+sigma^2 estimated as 1.298e+15,  Conditional Sum-of-Squares = 3.764894e+16,  AIC = 1212.39</code></pre>
+</div>
+</div>
+<p>ARMA(1,2) for nuclear produces an AIC value of 1212.39 and a CSS value of 3.76x10^16. It seems that the model fits the data pretty well but not perfectly. To achieve a better fit would require overfitting the training data and wouldn’t generalize well to new data.</p>
+<p><span class="math display">\[
+\phi(B) = 1 - 8.976*10^-1(B)
+\]</span> <span class="math display">\[
+\theta(B) = 1 - 5.65*10^-2 *(B) + 3.256*10^-1*(B^2)
+\]</span></p>
+<p><strong>Wind</strong></p>
+<p>The ARMA(p,q) model that minimizes AIC is ARMA(1,1).</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arma(x = wind_ts, order = c(1, 1))
+
+Model:
+ARMA(1,1)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-22040549  -6078188  -4049714   3768737  33558013 
+
+Coefficient(s):
+           Estimate  Std. Error  t value Pr(&gt;|t|)    
+ar1       1.105e+00   1.202e-02   91.912   &lt;2e-16 ***
+ma1       4.621e-01   1.890e-01    2.444   0.0145 *  
+intercept 6.648e+06   3.527e+04  188.479   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Fit:
+sigma^2 estimated as 1.659e+14,  Conditional Sum-of-Squares = 4.976633e+15,  AIC = 1144.57</code></pre>
+</div>
+</div>
+<p>ARMA(1,1) for wind produces an AIC value of 1144.57 and a CSS value of 4.97x10^15. The model fits this data much better than the previous data as it follows a steadier upward trend over time as wind production has been more widely adopted by US states. Additionally, wind power is less prone to political shocks so is easier to predict and fit.</p>
+<p><span class="math display">\[
+\phi(B) = 1 - 1.05(B)
+\]</span> <span class="math display">\[
+\theta(B) = 1 + 4.62*10^-1 *(B)
+\]</span></p>
+<p><strong>Solar</strong></p>
+<p>The ARMA(p,q) model that minimizes AIC is ARMA(1,2).</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arma(x = solar_ts, order = c(1, 2))
+
+Model:
+ARMA(1,2)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-8923843   -53422   331446  1505395 10832340 
+
+Coefficient(s):
+            Estimate  Std. Error  t value Pr(&gt;|t|)    
+ar1        1.268e+00   1.864e-02   68.028  &lt; 2e-16 ***
+ma1        1.018e+00   1.741e-01    5.849 4.96e-09 ***
+ma2       -2.671e-01   2.142e-01   -1.247    0.212    
+intercept -5.627e+05         NaN      NaN      NaN    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Fit:
+sigma^2 estimated as 1.255e+13,  Conditional Sum-of-Squares = 3.82509e+14,  AIC = 1063.94</code></pre>
+</div>
+</div>
+<p>Simiarly, ARMA(1,2) for solar produces an AIC value of 1,063.94 and a CSS value of 3.82x10^9. The model fits this data much better than the previous data as it follows a steadier upward trend over time as solar production has been more widely adopted by US states. Additionally, solar power is less prone to political shocks so is easier to predict and fit.</p>
+<p><span class="math display">\[
+\phi(B) = 1 - 1.268(B)
+\]</span> <span class="math display">\[
+\theta(B) = 1 - 1.018(B) + 2.671*10^-1*(B^2)
+\]</span></p>
+</section>
+<section id="fit-an-armapq-model-using-auto.arima" class="level3">
+<h3 class="anchored" data-anchor-id="fit-an-armapq-model-using-auto.arima">5) Fit an ARMA(p,q) model using auto.arima()</h3>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: coal_ts 
+ARIMA(2,2,2) 
+
+Coefficients:
+          ar1      ar2      ma1     ma2
+      -0.2910  -0.8112  -0.7750  0.8498
+s.e.   0.1896   0.1227   0.2165  0.3065
+
+sigma^2 = 2.109e+16:  log likelihood = -606.73
+AIC=1223.45   AICc=1225.95   BIC=1230.46</code></pre>
+</div>
+</div>
+<p>Auto.arima() chooses AR(2,2) as the best model, very different from my chosen model of AR(1,3). This is likely because auto.arima() considers a more comprehensive set of parameters (i.e.&nbsp;I didn’t check p=2 as a possible value) and I chose my model based on AIC alone whereas auto.arima() chooses models based on AIC, BIC, and AICc.</p>
+<p><strong>Nuclear</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: nuclear_ts 
+ARIMA(0,1,0) with drift 
+
+Coefficients:
+         drift
+      12988794
+s.e.   7504730
+
+sigma^2 = 1.79e+15:  log likelihood = -587.85
+AIC=1179.71   AICc=1180.13   BIC=1182.57</code></pre>
+</div>
+</div>
+<p>The model chosen here is (0,1,0) which is bizarre. This only applies differencing, but doesn’t use AutoRegressive modeling or Moving Average modeling. This is likely because the data is hard to fit.</p>
+<p><strong>Wind</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: wind_ts 
+ARIMA(0,2,1) 
+
+Coefficients:
+          ma1
+      -0.4339
+s.e.   0.1699
+
+sigma^2 = 2.172e+14:  log likelihood = -537.34
+AIC=1078.68   AICc=1079.13   BIC=1081.49</code></pre>
+</div>
+</div>
+<p>The model chosen is ARIMA(0,2,1), which is essentially an MA() model with differencing. The search algorithm decided to difference twice, where I didn’t because I already saw weak stationarity in initial exploration.</p>
+<p><strong>Solar</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: solar_ts 
+ARIMA(0,2,1) 
+
+Coefficients:
+         ma1
+      0.8289
+s.e.  0.1120
+
+sigma^2 = 2.766e+13:  log likelihood = -506.9
+AIC=1017.81   AICc=1018.25   BIC=1020.61</code></pre>
+</div>
+</div>
+<p>The model chosen is ARIMA(0,2,1), which is essentially an MA() model with differencing. The search algorithm decided to difference twice, where I didn’t because I already saw weak stationarity in initial exploration.</p>
+</section>
+<section id="forecast" class="level3">
+<h3 class="anchored" data-anchor-id="forecast">6) Forecast</h3>
+<p>Forecast each energy source for the next three years - using manually selected models, but including 2 orders of differencing for each.</p>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Forecasting coal production three years into the future, it’s expected to continue declining along the lines of its current downward trend. There’s quite a large confidence band around this estimate, as many other factors will affect coal production - such as the geopolitical climate surrounding coal.</p>
+<p><strong>Nuclear</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Forecasting nuclear production three years into the future, it’s expected to stay fairly steady along the 1.5x10^9 tons line. There’s quite a large confidence band around this estimate, as many other factors will affect wind production - especially political sentiment around its usage.</p>
+<p><strong>Wind</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Forecasting wind production three years into the future, it’s expected to continually exponentially growing as per its existing trend. There’s a much smaller confidence band around this esimate, as its seen a steady increase over this timeframe. Infrastructure improvements in the space will affect the estimate greatly.</p>
+<p><strong>Solar</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Forecasting solar production three years into the future, it’s expected to continually exponentially growing as per its existing trend. There’s a much smaller confidence band around this esimate, as its seen a steady increase over this timeframe. Infrastructure improvements in the space will affect the estimate greatly.</p>
+</section>
+<section id="benchmark-methods" class="level3">
+<h3 class="anchored" data-anchor-id="benchmark-methods">7) Benchmark Methods</h3>
+<p>Compare the models to baseline benchmark methods to ensure they’re performing above.</p>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Nuclear</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Wind</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Solar</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Note:</strong> Across all four energy sources, the fitted model does perform better than benchmark methods.</p>
+</section>
+</section>
+<section id="dataset-2---petroleum-exports-vs.-imports" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-2---petroleum-exports-vs.-imports">Dataset 2 - Petroleum Exports vs.&nbsp;Imports</h2>
+<div class="cell">
+
+</div>
+<section id="data-review-1" class="level3">
+<h3 class="anchored" data-anchor-id="data-review-1">1) Data Review</h3>
+<p>From <a href="eda.html">EDA</a>, we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we take the log and difference to make it stationary.</p>
+<p><strong>Log Transform petroleum imports, exports, and production - and plot</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Since the data is still not stationary, exports, imports, and production will be differenced.</p>
+<p><strong>Imports</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  import_ts %&gt;% diff()
+Dickey-Fuller = -3.7192, Lag order = 2, p-value = 0.04149
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+<p><strong>Exports</strong></p>
+<p>Must be differenced twice. A first difference results in a p-value of 0.32 by the ADF test: indicating that we can’t reject the null hypothesis of no stationarity. Stationarity is only achieved with a second difference.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  export_ts %&gt;% diff() %&gt;% diff()
+Dickey-Fuller = -4.5144, Lag order = 2, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+<p><strong>Production</strong> Must be differenced twice. A first difference results in a p-value of 0.99 by the ADF test: indicating that we can’t reject the null hypothesis of no stationarity. Stationarity is only achieved with a second difference.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  production_ts %&gt;% diff() %&gt;% diff()
+Dickey-Fuller = -4.0549, Lag order = 2, p-value = 0.02134
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+<p>All three variables were differenced once or twice in order to achieve stationarity. The stationary property of the data is confirmed by the ACF plots of each, as well as the Augmented-Dickey-Fuller Test of the differenced series.</p>
+</section>
+<section id="acfpacf-plots-1" class="level3">
+<h3 class="anchored" data-anchor-id="acfpacf-plots-1">2) ACF/PACF Plots</h3>
+<p>ACF/PACF plots are used to select potential p and q values for an ARIMA(p,d,q) model. From these plots, some potential p and q values are selected to fit an ARIMA model with. Separate models have to be fit for each variable thus separate ACF/PACF plots are shown below.</p>
+<p><strong>Import</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3 <br> Autoregressive term (found from pACF): p - 1</p>
+<p><strong>Exports</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3 <br> Autoregressive term (found from pACF): p - 1</p>
+<p><strong>Production</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1 <br> Autoregressive term (found from pACF): p - 1</p>
+</section>
+<section id="fit-arimapdq-models-1" class="level3">
+<h3 class="anchored" data-anchor-id="fit-arimapdq-models-1">3) Fit ARIMA(p,d,q) models</h3>
+<p><strong>Imports</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.764891</td>
+<td style="text-align: right;">5.171374</td>
+<td style="text-align: right;">3.028049</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.782784</td>
+<td style="text-align: right;">5.055911</td>
+<td style="text-align: right;">3.116117</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">10.774584</td>
+<td style="text-align: right;">13.908151</td>
+<td style="text-align: right;">12.186349</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3.519834</td>
+<td style="text-align: right;">8.061811</td>
+<td style="text-align: right;">5.742056</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3.708435</td>
+<td style="text-align: right;">8.072605</td>
+<td style="text-align: right;">6.061376</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">7.919693</td>
+<td style="text-align: right;">12.097783</td>
+<td style="text-align: right;">10.419693</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3.394707</td>
+<td style="text-align: right;">9.072178</td>
+<td style="text-align: right;">6.924119</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">5.588815</td>
+<td style="text-align: right;">11.044027</td>
+<td style="text-align: right;">9.338815</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">8.751611</td>
+<td style="text-align: right;">13.974223</td>
+<td style="text-align: right;">12.751611</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Exports</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">10.408080</td>
+<td style="text-align: right;">13.81456</td>
+<td style="text-align: right;">11.67124</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">11.644777</td>
+<td style="text-align: right;">14.91790</td>
+<td style="text-align: right;">12.97811</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">19.463857</td>
+<td style="text-align: right;">22.59742</td>
+<td style="text-align: right;">20.87562</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">9.090324</td>
+<td style="text-align: right;">13.63230</td>
+<td style="text-align: right;">11.31255</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">12.512548</td>
+<td style="text-align: right;">16.87672</td>
+<td style="text-align: right;">14.86549</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">21.466731</td>
+<td style="text-align: right;">25.64482</td>
+<td style="text-align: right;">23.96673</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">11.089958</td>
+<td style="text-align: right;">16.76743</td>
+<td style="text-align: right;">14.61937</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">11.108577</td>
+<td style="text-align: right;">16.56379</td>
+<td style="text-align: right;">14.85858</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">18.917698</td>
+<td style="text-align: right;">24.14031</td>
+<td style="text-align: right;">22.91770</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Production</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-42.47036</td>
+<td style="text-align: right;">-40.19937</td>
+<td style="text-align: right;">-41.87036</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-40.83047</td>
+<td style="text-align: right;">-38.64838</td>
+<td style="text-align: right;">-40.19889</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-29.22643</td>
+<td style="text-align: right;">-27.13739</td>
+<td style="text-align: right;">-28.55977</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-40.55816</td>
+<td style="text-align: right;">-37.15168</td>
+<td style="text-align: right;">-39.29500</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-38.89113</td>
+<td style="text-align: right;">-35.61800</td>
+<td style="text-align: right;">-37.55780</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-33.56462</td>
+<td style="text-align: right;">-30.43105</td>
+<td style="text-align: right;">-32.15285</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-40.56932</td>
+<td style="text-align: right;">-37.16284</td>
+<td style="text-align: right;">-39.30617</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-38.93721</td>
+<td style="text-align: right;">-35.66408</td>
+<td style="text-align: right;">-37.60387</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-28.70668</td>
+<td style="text-align: right;">-25.57311</td>
+<td style="text-align: right;">-27.29491</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-38.76965</td>
+<td style="text-align: right;">-34.22767</td>
+<td style="text-align: right;">-36.54743</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-37.03220</td>
+<td style="text-align: right;">-32.66803</td>
+<td style="text-align: right;">-34.67926</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-32.16038</td>
+<td style="text-align: right;">-27.98229</td>
+<td style="text-align: right;">-29.66038</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="model-diagnostics-1" class="level3">
+<h3 class="anchored" data-anchor-id="model-diagnostics-1">4) Model Diagnostics</h3>
+<p>With the above exploration, a best fit model for each variable is chosen by minimizing AIC, AICc, and BIC</p>
+<p><strong>Imports</strong></p>
+<p>The ARIMA model that minimizes AIC and AICc is ARIMA(1,1,1)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = import_ts, order = c(1, 1, 1))
+
+Coefficients:
+         ar1      ma1
+      0.5586  -0.1272
+s.e.  0.4354   0.5220
+
+sigma^2 estimated as 0.04819:  log likelihood = 2.12,  aic = 1.76
+
+Training set error measures:
+                     ME      RMSE       MAE       MPE     MAPE      MASE
+Training set 0.05626467 0.2149074 0.1541133 0.7196743 1.833747 0.7871504
+                   ACF1
+Training set -0.0981568</code></pre>
+</div>
+</div>
+<p>With this model, we get a training RMSE of 0.215, so the model fits the training data fairly well without overfitting due to its bizarre behavior.</p>
+<p><span class="math display">\[
+\phi(B) = 1 - 0.5586(B)
+\]</span> <span class="math display">\[
+\theta(B) = 1 - 0.4354(B)
+\]</span></p>
+<p><strong>Exports</strong></p>
+<p>The consensus across AIC, BIC, and AICc is that the best fit model is ARIMA(1,1,2).</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = export_ts, order = c(1, 1, 2))
+
+Coefficients:
+          ar1     ma1     ma2
+      -0.8486  1.7381  0.9117
+s.e.   0.1701  0.3518  0.3438
+
+sigma^2 estimated as 0.05395:  log likelihood = -0.55,  aic = 9.09
+
+Training set error measures:
+                     ME      RMSE       MAE       MPE     MAPE      MASE
+Training set 0.07329069 0.2273772 0.1747664 0.9874671 2.719147 0.7576492
+                   ACF1
+Training set -0.0979957</code></pre>
+</div>
+</div>
+<p><span class="math display">\[
+\phi(B) = 1 + 0.8486(B)
+\]</span> <span class="math display">\[
+\theta(B) = 1 - 1.7101(B) - 0.9117(B^2)
+\]</span> With this model, we get a training RMSE of 0.2273. As evidenced by the plot, the model does a pretty terrible job with this model fit - likely due to the complex adn random nature of the data. Let’s see what auto.arima() would have chosen for this model.</p>
+<p><strong>Production</strong></p>
+<p>The consensus across AIC, BIC, and AICc is that the best fit model is ARIMA(1,1,0).</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = production_ts, order = c(1, 1, 0))
+
+Coefficients:
+         ar1
+      0.8427
+s.e.  0.1421
+
+sigma^2 estimated as 0.007357:  log likelihood = 23.24,  aic = -42.47
+
+Training set error measures:
+                     ME       RMSE        MAE       MPE     MAPE      MASE
+Training set 0.01526092 0.08398331 0.06473024 0.1645849 0.705565 0.7023005
+                    ACF1
+Training set 0.008829977</code></pre>
+</div>
+</div>
+<p><span class="math display">\[
+\phi(B) = 1 - 0.8427(B)
+\]</span></p>
+<p>With this model, we get a training RMSE of 0.08398331, so the model fits the training data fairly well without overfitting due to its bizarre behavior.</p>
+</section>
+<section id="fit-an-arimapdq-model-using-auto.arima" class="level3">
+<h3 class="anchored" data-anchor-id="fit-an-arimapdq-model-using-auto.arima">5) Fit an ARIMA(p,d,q) model using auto.arima()</h3>
+<p><strong>Imports</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: import_ts 
+ARIMA(0,1,0) with drift 
+
+Coefficients:
+       drift
+      0.1189
+s.e.  0.0450
+
+sigma^2 = 0.04869:  log likelihood = 2.63
+AIC=-1.26   AICc=-0.66   BIC=1.01</code></pre>
+</div>
+</div>
+<p>The model chosen is ARIMA(0,1,0) with drift. While auto.arima() agrees with my choice of differencing, it chose different parameters for p and q, and experimented with drift whereas I did not.</p>
+<p><strong>Exports</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: export_ts 
+ARIMA(0,1,1) with drift 
+
+Coefficients:
+         ma1   drift
+      0.4822  0.1498
+s.e.  0.1514  0.0766
+
+sigma^2 = 0.06913:  log likelihood = -1
+AIC=7.99   AICc=9.26   BIC=11.4</code></pre>
+</div>
+</div>
+<p>The model chosen is ARIMA(0,1,1) with drift. This is slightly different than my choice, likely because auto.arima() experimented with a wider range of parameters and experimented with drift.</p>
+<p><strong>Production</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: production_ts 
+ARIMA(2,0,0) with non-zero mean 
+
+Coefficients:
+         ar1      ar2    mean
+      1.7223  -0.8478  9.1494
+s.e.  0.1344   0.1229  0.1388
+
+sigma^2 = 0.007907:  log likelihood = 23.34
+AIC=-38.69   AICc=-36.58   BIC=-33.98</code></pre>
+</div>
+</div>
+<p>The model chosen is ARIMA(2,0,0) with non-zero mean - or an AR(2) model. AR is more suitable when the data has a clear pattern of autoregression and less randomness. This potentially makes sense given the lack of seasonality and large overall upward trend in production since 1970.</p>
+</section>
+<section id="forecast-1" class="level3">
+<h3 class="anchored" data-anchor-id="forecast-1">6) Forecast</h3>
+<p>Forecasting petroleum imports, exports, and production for the next three years.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-49-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>All three forecasts have a wide confidence band - indicating that based on past data alone we cannot generate a good estimate with high confidence. Imports are expected to increase slightly in the next 3 years, but have mostly stabilized. Exports are expected to increase for a year and then plateau/decrease for the next two years. Production is expected to continue exponentially increasing during the next three years.</p>
+</section>
+<section id="benchmark" class="level3">
+<h3 class="anchored" data-anchor-id="benchmark">7) Benchmark</h3>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-50-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The models perform better than most of the models, expect the drift model. It’s clear that the models would benefit from incorporating a drift term to account for the intense drift especially production and exports suffer from.</p>
+</section>
+</section>
+<section id="dataset-3---cost-of-energy" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-3---cost-of-energy">Dataset 3 - Cost of Energy</h2>
+<div class="cell">
+
+</div>
+<section id="data-review-2" class="level3">
+<h3 class="anchored" data-anchor-id="data-review-2">1) Data Review</h3>
+<p>From <a href="eda.html">EDA</a>, we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we take the log and difference to make it stationary.</p>
+<p><strong>Log Transform - and plot</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-52-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Taking the log of the data barely changed it! We’ll have to difference it. According to the ADF test, the data requires 2 differences. We can experiment with this during model building.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-53-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  cost_ts %&gt;% diff()
+Dickey-Fuller = -2.6121, Lag order = 3, p-value = 0.3332
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+</section>
+<section id="acfpacf-plots-2" class="level3">
+<h3 class="anchored" data-anchor-id="acfpacf-plots-2">2) ACF/PACF Plots</h3>
+<p>ACF/PACF plots are used to select potential p and q values for an ARIMA(p,d,q) model. From these plots, some potential p and q values are selected to fit an ARIMA model with. Separate models have to be fit for each variable thus separate ACF/PACF plots are shown below.</p>
+<p><strong>Import</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-54-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Moving average order (found from ACF): q - 1,2,3,4,5 <br> Autoregressive term (found from pACF): p - 0,1</p>
+</section>
+<section id="fit-arimapdq-models-2" class="level3">
+<h3 class="anchored" data-anchor-id="fit-arimapdq-models-2">3) Fit ARIMA(p,d,q) models</h3>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-39.93109</td>
+<td style="text-align: right;">-36.60397</td>
+<td style="text-align: right;">-39.59776</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-17.18553</td>
+<td style="text-align: right;">-13.91036</td>
+<td style="text-align: right;">-16.84267</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-38.52660</td>
+<td style="text-align: right;">-33.53591</td>
+<td style="text-align: right;">-37.84088</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-29.18752</td>
+<td style="text-align: right;">-24.27477</td>
+<td style="text-align: right;">-28.48164</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-36.60530</td>
+<td style="text-align: right;">-29.95105</td>
+<td style="text-align: right;">-35.42883</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-27.35465</td>
+<td style="text-align: right;">-20.80430</td>
+<td style="text-align: right;">-26.14253</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">-37.89350</td>
+<td style="text-align: right;">-29.57569</td>
+<td style="text-align: right;">-36.07532</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">-26.43893</td>
+<td style="text-align: right;">-18.25100</td>
+<td style="text-align: right;">-24.56393</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-36.23746</td>
+<td style="text-align: right;">-26.25609</td>
+<td style="text-align: right;">-33.61246</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-26.28811</td>
+<td style="text-align: right;">-16.46259</td>
+<td style="text-align: right;">-23.57843</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-38.52145</td>
+<td style="text-align: right;">-33.53077</td>
+<td style="text-align: right;">-37.83574</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-22.09809</td>
+<td style="text-align: right;">-17.18533</td>
+<td style="text-align: right;">-21.39221</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-39.77465</td>
+<td style="text-align: right;">-33.12040</td>
+<td style="text-align: right;">-38.59818</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-27.31762</td>
+<td style="text-align: right;">-20.76727</td>
+<td style="text-align: right;">-26.10550</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-37.90967</td>
+<td style="text-align: right;">-29.59186</td>
+<td style="text-align: right;">-36.09149</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-28.53833</td>
+<td style="text-align: right;">-20.35040</td>
+<td style="text-align: right;">-26.66333</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">-36.48416</td>
+<td style="text-align: right;">-26.50279</td>
+<td style="text-align: right;">-33.85916</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">-27.12777</td>
+<td style="text-align: right;">-17.30225</td>
+<td style="text-align: right;">-24.41809</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-34.48427</td>
+<td style="text-align: right;">-22.83934</td>
+<td style="text-align: right;">-30.87137</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-25.13525</td>
+<td style="text-align: right;">-13.67215</td>
+<td style="text-align: right;">-21.40192</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="model-diagnostics-2" class="level3">
+<h3 class="anchored" data-anchor-id="model-diagnostics-2">4) Model Diagnostics</h3>
+<p>With the above exploration, a best fit model for each variable is chosen by minimizing AIC, AICc, and BIC</p>
+<p>The ARIMA model that minimizes AIC, BIC, and AICc is ARIMA(0,2,1)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-57-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = cost_ts, order = c(0, 2, 1))
+
+Coefficients:
+          ma1
+      -0.8515
+s.e.   0.1333
+
+sigma^2 estimated as 0.01836:  log likelihood = 21.97,  aic = -39.93
+
+Training set error measures:
+                       ME      RMSE        MAE        MPE     MAPE      MASE
+Training set -0.007565158 0.1321637 0.09492191 -0.1831388 7.305725 0.9102723
+                   ACF1
+Training set 0.06219478</code></pre>
+</div>
+</div>
+<p>With this model, we get a training RMSE of 0.243, so the model fits the training data fairly well without overfitting. The random bumps and dips in the data have been largely smoothed, while the trend line is maintained.</p>
+<p><span class="math display">\[
+\theta(B) = 1 + 0.8616(B)
+\]</span></p>
+</section>
+<section id="fit-an-arimapdq-model-using-auto.arima-1" class="level3">
+<h3 class="anchored" data-anchor-id="fit-an-arimapdq-model-using-auto.arima-1">5) Fit an ARIMA(p,d,q) model using auto.arima()</h3>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: cost_ts 
+ARIMA(0,1,0) with drift 
+
+Coefficients:
+       drift
+      0.0572
+s.e.  0.0207
+
+sigma^2 = 0.01756:  log likelihood = 24.6
+AIC=-45.19   AICc=-44.87   BIC=-41.81</code></pre>
+</div>
+</div>
+<p>The model chosen by auto.arima() is ARIMA(0,1,0) with drift. This is similar to the model parameters that I manually chose - except that auto.arima() chose to perform a second difference of the data and didn’t see the need for a moving average term.</p>
+</section>
+<section id="forecast-2" class="level3">
+<h3 class="anchored" data-anchor-id="forecast-2">6) Forecast</h3>
+<p>Forecasting electricity costs for the next three years.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-59-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>According to our model, electricity costs are going to continue to rise over the next three years. Though there is ia decently large confidence band around the estimate, it is predicted that the slight dip in electricity costs during the Great Recession in 2008 were short lived and the market is going to recover. Since this data is old, I can confirm that electricity costs have continued to rise since the dataset stopped collecting data and the model forecast was correct.</p>
+</section>
+<section id="benchmark-1" class="level3">
+<h3 class="anchored" data-anchor-id="benchmark-1">7) Benchmark</h3>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-60-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The model performs better than all the benchmark methods - except drift which performs about the same as the model. Again, this model could be improved by including a drift term and then should outperform even the drift benchmark.</p>
+</section>
+</section>
+<section id="dataset-4---co2-emissions" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-4---co2-emissions">Dataset 4 - CO2 Emissions</h2>
+<div class="cell">
+
+</div>
+<section id="data-review-3" class="level3">
+<h3 class="anchored" data-anchor-id="data-review-3">1) Data Review</h3>
+<p>From <a href="eda.html">EDA</a>, we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we take the log and difference to make it stationary.</p>
+<p><strong>Log Transform coal, natural gas, petro, and hydrocarbon gas - and plot</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-62-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Taking the log of the data changed it significantly! An ADF test reveals the data is almost stationary. According to the ADF test, coal and petroleum require another differencing, while hydro and natural gas are already stationary. We can experiment with this during model building.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  coal_ts %&gt;% diff()
+Dickey-Fuller = -17.759, Lag order = 8, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  hydro_ts
+Dickey-Fuller = -4.6126, Lag order = 8, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  natural_ts
+Dickey-Fuller = -5.1735, Lag order = 8, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Augmented Dickey-Fuller Test
+
+data:  petro_ts %&gt;% diff()
+Dickey-Fuller = -14.139, Lag order = 8, p-value = 0.01
+alternative hypothesis: stationary</code></pre>
+</div>
+</div>
+</section>
+<section id="acfpacf-plots-3" class="level3">
+<h3 class="anchored" data-anchor-id="acfpacf-plots-3">2) ACF/PACF Plots</h3>
+<p>ACF/PACF plots are used to select potential p and q values for a SARIMA(p,d,q)(P,D,Q) model. SARIMA is used because the data contains seasonal components and had differencing. From these plots, some potential p,q,P,Q values are selected to fit a SARIMA model with. Separate models have to be fit for each energy source, thus separate ACF/PACF plots are shown below.</p>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-64-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Differencing: d = 0,1; D = 0,1 <br> Moving average order: q = 0,1; Q = 0,1,2,3 <br> Autoregressive terms: p = 0,1, P = 0,1 <br></p>
+<p><strong>Hydrocarbon</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-65-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Differencing: d = 0,1; D = 0,1 <br> Moving average order: q = 0,1,2,3,4; Q = 0,1,2,3 <br> Autoregressive terms: p = 0,1, P = 0,1,2 <br></p>
+<p><strong>Natural Gas</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-66-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Differencing: d = 0,1; D = 0,1 <br> Moving average order (ACF): q = 0,1,2; Q = 0,1,2 <br> Autoregressive terms (PACF): p = 0,1,2,3; P = 0,1,2,3 <br></p>
+<p><strong>Petroleum</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-67-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Differencing: d = 0,1; D = 0,1 <br> Moving average order: q = 0,1; Q = 0,1 <br> Autoregressive terms: p = 0,1,2,3,4; P = 0,1,2 <br></p>
+</section>
+<section id="fit-sarima-models-and-model-diagnostics" class="level3">
+<h3 class="anchored" data-anchor-id="fit-sarima-models-and-model-diagnostics">3) Fit SARIMA models and Model Diagnostics</h3>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">P</th>
+<th style="text-align: right;">D</th>
+<th style="text-align: right;">Q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1713.934</td>
+<td style="text-align: right;">-1709.559</td>
+<td style="text-align: right;">-1713.928</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1808.766</td>
+<td style="text-align: right;">-1800.016</td>
+<td style="text-align: right;">-1808.746</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1933.114</td>
+<td style="text-align: right;">-1924.364</td>
+<td style="text-align: right;">-1933.094</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1934.556</td>
+<td style="text-align: right;">-1921.431</td>
+<td style="text-align: right;">-1934.515</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1935.279</td>
+<td style="text-align: right;">-1922.154</td>
+<td style="text-align: right;">-1935.238</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1933.530</td>
+<td style="text-align: right;">-1916.030</td>
+<td style="text-align: right;">-1933.461</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1756.164</td>
+<td style="text-align: right;">-1747.414</td>
+<td style="text-align: right;">-1756.144</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1840.869</td>
+<td style="text-align: right;">-1827.744</td>
+<td style="text-align: right;">-1840.828</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1954.295</td>
+<td style="text-align: right;">-1941.170</td>
+<td style="text-align: right;">-1954.254</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1957.260</td>
+<td style="text-align: right;">-1939.760</td>
+<td style="text-align: right;">-1957.191</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1958.498</td>
+<td style="text-align: right;">-1940.998</td>
+<td style="text-align: right;">-1958.429</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1956.844</td>
+<td style="text-align: right;">-1934.969</td>
+<td style="text-align: right;">-1956.741</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1749.433</td>
+<td style="text-align: right;">-1740.683</td>
+<td style="text-align: right;">-1749.412</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1832.690</td>
+<td style="text-align: right;">-1819.565</td>
+<td style="text-align: right;">-1832.649</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1946.043</td>
+<td style="text-align: right;">-1932.918</td>
+<td style="text-align: right;">-1946.002</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1949.070</td>
+<td style="text-align: right;">-1931.570</td>
+<td style="text-align: right;">-1949.001</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1950.206</td>
+<td style="text-align: right;">-1932.706</td>
+<td style="text-align: right;">-1950.138</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1948.466</td>
+<td style="text-align: right;">-1926.591</td>
+<td style="text-align: right;">-1948.363</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1755.139</td>
+<td style="text-align: right;">-1742.014</td>
+<td style="text-align: right;">-1755.097</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1862.508</td>
+<td style="text-align: right;">-1845.008</td>
+<td style="text-align: right;">-1862.440</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1983.036</td>
+<td style="text-align: right;">-1965.536</td>
+<td style="text-align: right;">-1982.967</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1983.376</td>
+<td style="text-align: right;">-1961.500</td>
+<td style="text-align: right;">-1983.272</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1984.070</td>
+<td style="text-align: right;">-1962.195</td>
+<td style="text-align: right;">-1983.967</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Hydrocarbon</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">P</th>
+<th style="text-align: right;">D</th>
+<th style="text-align: right;">Q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-873.1263</td>
+<td style="text-align: right;">-868.7513</td>
+<td style="text-align: right;">-873.1194</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1002.8832</td>
+<td style="text-align: right;">-994.1332</td>
+<td style="text-align: right;">-1002.8627</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1111.3376</td>
+<td style="text-align: right;">-1098.2125</td>
+<td style="text-align: right;">-1111.2964</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1203.8541</td>
+<td style="text-align: right;">-1195.1040</td>
+<td style="text-align: right;">-1203.8335</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1201.9027</td>
+<td style="text-align: right;">-1188.7776</td>
+<td style="text-align: right;">-1201.8616</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1204.4410</td>
+<td style="text-align: right;">-1186.9409</td>
+<td style="text-align: right;">-1204.3722</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1201.9142</td>
+<td style="text-align: right;">-1188.7891</td>
+<td style="text-align: right;">-1201.8730</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1201.4663</td>
+<td style="text-align: right;">-1183.9662</td>
+<td style="text-align: right;">-1201.3976</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1203.6509</td>
+<td style="text-align: right;">-1181.7757</td>
+<td style="text-align: right;">-1203.5476</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-1203.5805</td>
+<td style="text-align: right;">-1186.0804</td>
+<td style="text-align: right;">-1203.5117</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-1202.5083</td>
+<td style="text-align: right;">-1180.6331</td>
+<td style="text-align: right;">-1202.4050</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1060.3161</td>
+<td style="text-align: right;">-1051.5660</td>
+<td style="text-align: right;">-1060.2955</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1186.1759</td>
+<td style="text-align: right;">-1173.0508</td>
+<td style="text-align: right;">-1186.1347</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1287.0822</td>
+<td style="text-align: right;">-1269.5821</td>
+<td style="text-align: right;">-1287.0135</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1347.1337</td>
+<td style="text-align: right;">-1334.0086</td>
+<td style="text-align: right;">-1347.0925</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1345.9415</td>
+<td style="text-align: right;">-1328.4414</td>
+<td style="text-align: right;">-1345.8728</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1346.4694</td>
+<td style="text-align: right;">-1324.5943</td>
+<td style="text-align: right;">-1346.3661</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1346.0930</td>
+<td style="text-align: right;">-1328.5929</td>
+<td style="text-align: right;">-1346.0243</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1346.8532</td>
+<td style="text-align: right;">-1324.9781</td>
+<td style="text-align: right;">-1346.7500</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-1346.6384</td>
+<td style="text-align: right;">-1324.7633</td>
+<td style="text-align: right;">-1346.5351</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1061.4756</td>
+<td style="text-align: right;">-1048.3506</td>
+<td style="text-align: right;">-1061.4345</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1189.6328</td>
+<td style="text-align: right;">-1172.1327</td>
+<td style="text-align: right;">-1189.5641</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1295.2742</td>
+<td style="text-align: right;">-1273.3991</td>
+<td style="text-align: right;">-1295.1710</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1358.8380</td>
+<td style="text-align: right;">-1341.3379</td>
+<td style="text-align: right;">-1358.7693</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1357.1601</td>
+<td style="text-align: right;">-1335.2849</td>
+<td style="text-align: right;">-1357.0568</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1357.2290</td>
+<td style="text-align: right;">-1335.3539</td>
+<td style="text-align: right;">-1357.1258</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1061.0342</td>
+<td style="text-align: right;">-1043.5341</td>
+<td style="text-align: right;">-1060.9655</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1188.4295</td>
+<td style="text-align: right;">-1166.5543</td>
+<td style="text-align: right;">-1188.3262</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1357.7752</td>
+<td style="text-align: right;">-1335.9001</td>
+<td style="text-align: right;">-1357.6719</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1080.6914</td>
+<td style="text-align: right;">-1058.8163</td>
+<td style="text-align: right;">-1080.5881</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-975.5913</td>
+<td style="text-align: right;">-966.8413</td>
+<td style="text-align: right;">-975.5708</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1099.9589</td>
+<td style="text-align: right;">-1086.8339</td>
+<td style="text-align: right;">-1099.9178</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1202.5387</td>
+<td style="text-align: right;">-1185.0386</td>
+<td style="text-align: right;">-1202.4699</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1285.5188</td>
+<td style="text-align: right;">-1272.3937</td>
+<td style="text-align: right;">-1285.4776</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1283.9443</td>
+<td style="text-align: right;">-1266.4442</td>
+<td style="text-align: right;">-1283.8755</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1285.8820</td>
+<td style="text-align: right;">-1264.0069</td>
+<td style="text-align: right;">-1285.7787</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1284.0408</td>
+<td style="text-align: right;">-1266.5407</td>
+<td style="text-align: right;">-1283.9721</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1284.2978</td>
+<td style="text-align: right;">-1262.4227</td>
+<td style="text-align: right;">-1284.1946</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-1285.6719</td>
+<td style="text-align: right;">-1263.7968</td>
+<td style="text-align: right;">-1285.5687</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1061.1029</td>
+<td style="text-align: right;">-1047.9778</td>
+<td style="text-align: right;">-1061.0618</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1189.1817</td>
+<td style="text-align: right;">-1171.6816</td>
+<td style="text-align: right;">-1189.1130</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1295.2879</td>
+<td style="text-align: right;">-1273.4128</td>
+<td style="text-align: right;">-1295.1846</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1362.6442</td>
+<td style="text-align: right;">-1345.1441</td>
+<td style="text-align: right;">-1362.5755</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1360.9720</td>
+<td style="text-align: right;">-1339.0969</td>
+<td style="text-align: right;">-1360.8687</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1361.0473</td>
+<td style="text-align: right;">-1339.1722</td>
+<td style="text-align: right;">-1360.9440</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1085.5112</td>
+<td style="text-align: right;">-1068.0111</td>
+<td style="text-align: right;">-1085.4425</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1199.6741</td>
+<td style="text-align: right;">-1177.7990</td>
+<td style="text-align: right;">-1199.5708</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1366.4262</td>
+<td style="text-align: right;">-1344.5511</td>
+<td style="text-align: right;">-1366.3230</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1083.6212</td>
+<td style="text-align: right;">-1061.7461</td>
+<td style="text-align: right;">-1083.5179</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Natural Gas</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">P</th>
+<th style="text-align: right;">D</th>
+<th style="text-align: right;">Q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1542.895</td>
+<td style="text-align: right;">-1538.520</td>
+<td style="text-align: right;">-1542.889</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1658.087</td>
+<td style="text-align: right;">-1649.337</td>
+<td style="text-align: right;">-1658.066</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1725.448</td>
+<td style="text-align: right;">-1712.323</td>
+<td style="text-align: right;">-1725.407</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1753.627</td>
+<td style="text-align: right;">-1736.127</td>
+<td style="text-align: right;">-1753.558</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1792.413</td>
+<td style="text-align: right;">-1783.663</td>
+<td style="text-align: right;">-1792.392</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1792.921</td>
+<td style="text-align: right;">-1779.796</td>
+<td style="text-align: right;">-1792.880</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1792.694</td>
+<td style="text-align: right;">-1775.194</td>
+<td style="text-align: right;">-1792.625</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1790.751</td>
+<td style="text-align: right;">-1768.876</td>
+<td style="text-align: right;">-1790.648</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1793.287</td>
+<td style="text-align: right;">-1780.162</td>
+<td style="text-align: right;">-1793.246</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1792.405</td>
+<td style="text-align: right;">-1774.904</td>
+<td style="text-align: right;">-1792.336</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1790.737</td>
+<td style="text-align: right;">-1768.861</td>
+<td style="text-align: right;">-1790.633</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1630.824</td>
+<td style="text-align: right;">-1622.074</td>
+<td style="text-align: right;">-1630.803</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1734.020</td>
+<td style="text-align: right;">-1720.895</td>
+<td style="text-align: right;">-1733.979</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1785.860</td>
+<td style="text-align: right;">-1768.359</td>
+<td style="text-align: right;">-1785.791</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1810.176</td>
+<td style="text-align: right;">-1788.301</td>
+<td style="text-align: right;">-1810.073</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1831.400</td>
+<td style="text-align: right;">-1818.275</td>
+<td style="text-align: right;">-1831.358</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1832.111</td>
+<td style="text-align: right;">-1814.611</td>
+<td style="text-align: right;">-1832.043</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1831.441</td>
+<td style="text-align: right;">-1809.566</td>
+<td style="text-align: right;">-1831.337</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1832.460</td>
+<td style="text-align: right;">-1814.960</td>
+<td style="text-align: right;">-1832.391</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1831.015</td>
+<td style="text-align: right;">-1809.140</td>
+<td style="text-align: right;">-1830.912</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1669.981</td>
+<td style="text-align: right;">-1656.855</td>
+<td style="text-align: right;">-1669.939</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1772.096</td>
+<td style="text-align: right;">-1754.595</td>
+<td style="text-align: right;">-1772.027</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1830.306</td>
+<td style="text-align: right;">-1808.431</td>
+<td style="text-align: right;">-1830.203</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1870.805</td>
+<td style="text-align: right;">-1853.305</td>
+<td style="text-align: right;">-1870.736</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1872.027</td>
+<td style="text-align: right;">-1850.152</td>
+<td style="text-align: right;">-1871.924</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1872.589</td>
+<td style="text-align: right;">-1850.714</td>
+<td style="text-align: right;">-1872.486</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1582.644</td>
+<td style="text-align: right;">-1573.894</td>
+<td style="text-align: right;">-1582.623</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1697.097</td>
+<td style="text-align: right;">-1683.972</td>
+<td style="text-align: right;">-1697.056</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1756.762</td>
+<td style="text-align: right;">-1739.262</td>
+<td style="text-align: right;">-1756.693</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1783.229</td>
+<td style="text-align: right;">-1761.354</td>
+<td style="text-align: right;">-1783.126</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1814.581</td>
+<td style="text-align: right;">-1801.456</td>
+<td style="text-align: right;">-1814.540</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1814.929</td>
+<td style="text-align: right;">-1797.428</td>
+<td style="text-align: right;">-1814.860</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1814.363</td>
+<td style="text-align: right;">-1792.487</td>
+<td style="text-align: right;">-1814.259</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1815.239</td>
+<td style="text-align: right;">-1797.739</td>
+<td style="text-align: right;">-1815.170</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1814.007</td>
+<td style="text-align: right;">-1792.132</td>
+<td style="text-align: right;">-1813.904</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1691.456</td>
+<td style="text-align: right;">-1678.331</td>
+<td style="text-align: right;">-1691.415</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1787.334</td>
+<td style="text-align: right;">-1769.834</td>
+<td style="text-align: right;">-1787.265</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1844.790</td>
+<td style="text-align: right;">-1822.915</td>
+<td style="text-align: right;">-1844.687</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1892.790</td>
+<td style="text-align: right;">-1875.290</td>
+<td style="text-align: right;">-1892.721</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1894.348</td>
+<td style="text-align: right;">-1872.473</td>
+<td style="text-align: right;">-1894.244</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1894.850</td>
+<td style="text-align: right;">-1872.975</td>
+<td style="text-align: right;">-1894.747</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1690.210</td>
+<td style="text-align: right;">-1672.710</td>
+<td style="text-align: right;">-1690.141</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1786.554</td>
+<td style="text-align: right;">-1764.679</td>
+<td style="text-align: right;">-1786.451</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1890.932</td>
+<td style="text-align: right;">-1869.057</td>
+<td style="text-align: right;">-1890.829</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1632.125</td>
+<td style="text-align: right;">-1618.999</td>
+<td style="text-align: right;">-1632.083</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1736.742</td>
+<td style="text-align: right;">-1719.242</td>
+<td style="text-align: right;">-1736.673</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1790.699</td>
+<td style="text-align: right;">-1768.824</td>
+<td style="text-align: right;">-1790.595</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1836.138</td>
+<td style="text-align: right;">-1818.638</td>
+<td style="text-align: right;">-1836.069</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1837.311</td>
+<td style="text-align: right;">-1815.436</td>
+<td style="text-align: right;">-1837.208</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-1837.705</td>
+<td style="text-align: right;">-1815.830</td>
+<td style="text-align: right;">-1837.602</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1689.826</td>
+<td style="text-align: right;">-1672.326</td>
+<td style="text-align: right;">-1689.758</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1786.016</td>
+<td style="text-align: right;">-1764.141</td>
+<td style="text-align: right;">-1785.913</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1890.921</td>
+<td style="text-align: right;">-1869.045</td>
+<td style="text-align: right;">-1890.817</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1704.664</td>
+<td style="text-align: right;">-1682.789</td>
+<td style="text-align: right;">-1704.561</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1640.016</td>
+<td style="text-align: right;">-1622.516</td>
+<td style="text-align: right;">-1639.948</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1740.415</td>
+<td style="text-align: right;">-1718.540</td>
+<td style="text-align: right;">-1740.312</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-1839.331</td>
+<td style="text-align: right;">-1817.456</td>
+<td style="text-align: right;">-1839.228</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1697.614</td>
+<td style="text-align: right;">-1675.739</td>
+<td style="text-align: right;">-1697.511</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><strong>Petroleum</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<thead>
+<tr class="header">
+<th style="text-align: right;">p</th>
+<th style="text-align: right;">d</th>
+<th style="text-align: right;">q</th>
+<th style="text-align: right;">P</th>
+<th style="text-align: right;">D</th>
+<th style="text-align: right;">Q</th>
+<th style="text-align: right;">AIC</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">AICc</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">107.05453</td>
+<td style="text-align: right;">111.42955</td>
+<td style="text-align: right;">107.06137</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-84.86274</td>
+<td style="text-align: right;">-76.11269</td>
+<td style="text-align: right;">-84.84219</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-201.31645</td>
+<td style="text-align: right;">-188.19138</td>
+<td style="text-align: right;">-201.27529</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-266.32053</td>
+<td style="text-align: right;">-257.57048</td>
+<td style="text-align: right;">-266.29998</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-270.27867</td>
+<td style="text-align: right;">-257.15359</td>
+<td style="text-align: right;">-270.23750</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-269.47817</td>
+<td style="text-align: right;">-251.97808</td>
+<td style="text-align: right;">-269.40945</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-199.14932</td>
+<td style="text-align: right;">-190.39927</td>
+<td style="text-align: right;">-199.12878</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-403.85305</td>
+<td style="text-align: right;">-390.72798</td>
+<td style="text-align: right;">-403.81188</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-496.00647</td>
+<td style="text-align: right;">-478.50637</td>
+<td style="text-align: right;">-495.93775</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-572.47243</td>
+<td style="text-align: right;">-559.34735</td>
+<td style="text-align: right;">-572.43126</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-582.56629</td>
+<td style="text-align: right;">-565.06619</td>
+<td style="text-align: right;">-582.49756</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-581.20532</td>
+<td style="text-align: right;">-559.33020</td>
+<td style="text-align: right;">-581.10205</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-48.31077</td>
+<td style="text-align: right;">-39.56072</td>
+<td style="text-align: right;">-48.29022</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-251.91514</td>
+<td style="text-align: right;">-238.79007</td>
+<td style="text-align: right;">-251.87397</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-348.57302</td>
+<td style="text-align: right;">-331.07293</td>
+<td style="text-align: right;">-348.50430</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-424.90521</td>
+<td style="text-align: right;">-411.78013</td>
+<td style="text-align: right;">-424.86404</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-430.57355</td>
+<td style="text-align: right;">-413.07345</td>
+<td style="text-align: right;">-430.50482</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-429.03517</td>
+<td style="text-align: right;">-407.16005</td>
+<td style="text-align: right;">-428.93190</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-208.42018</td>
+<td style="text-align: right;">-195.29510</td>
+<td style="text-align: right;">-208.37901</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-403.12235</td>
+<td style="text-align: right;">-385.62225</td>
+<td style="text-align: right;">-403.05362</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-496.40992</td>
+<td style="text-align: right;">-474.53479</td>
+<td style="text-align: right;">-496.30665</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-571.40102</td>
+<td style="text-align: right;">-553.90092</td>
+<td style="text-align: right;">-571.33229</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-580.83795</td>
+<td style="text-align: right;">-558.96283</td>
+<td style="text-align: right;">-580.73468</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-95.61907</td>
+<td style="text-align: right;">-82.49400</td>
+<td style="text-align: right;">-95.57791</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-316.82671</td>
+<td style="text-align: right;">-299.32661</td>
+<td style="text-align: right;">-316.75798</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-412.05095</td>
+<td style="text-align: right;">-390.17583</td>
+<td style="text-align: right;">-411.94768</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-486.30003</td>
+<td style="text-align: right;">-468.79993</td>
+<td style="text-align: right;">-486.23130</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-499.14862</td>
+<td style="text-align: right;">-477.27350</td>
+<td style="text-align: right;">-499.04535</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-212.31668</td>
+<td style="text-align: right;">-194.81658</td>
+<td style="text-align: right;">-212.24795</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-406.03542</td>
+<td style="text-align: right;">-384.16029</td>
+<td style="text-align: right;">-405.93215</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-570.32544</td>
+<td style="text-align: right;">-548.45032</td>
+<td style="text-align: right;">-570.22217</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-114.39490</td>
+<td style="text-align: right;">-96.89480</td>
+<td style="text-align: right;">-114.32617</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-338.03855</td>
+<td style="text-align: right;">-316.16343</td>
+<td style="text-align: right;">-337.93528</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-507.26295</td>
+<td style="text-align: right;">-485.38782</td>
+<td style="text-align: right;">-507.15968</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-211.01216</td>
+<td style="text-align: right;">-189.13704</td>
+<td style="text-align: right;">-210.90889</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-127.23810</td>
+<td style="text-align: right;">-105.36298</td>
+<td style="text-align: right;">-127.13483</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="model-diagnostics-3" class="level3">
+<h3 class="anchored" data-anchor-id="model-diagnostics-3">4) Model Diagnostics</h3>
+<p>With the above exploration, a best fit model is chosen for each energy source by minimizing AIC.</p>
+<p><strong>Coal</strong></p>
+<p>The SARIMA model that minimizes AIC and AICc is SARIMA(1,1,1)(0,1,2)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-73-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: coal_ts 
+ARIMA(1,1,1)(0,1,2)[12] 
+
+Coefficients:
+         ar1      ma1     sma1     sma2
+      0.7153  -0.9330  -0.7101  -0.0771
+s.e.  0.0468   0.0262   0.0463   0.0433
+
+sigma^2 = 0.001933:  log likelihood = 997.03
+AIC=-1984.07   AICc=-1983.97   BIC=-1962.19
+
+Training set error measures:
+                      ME       RMSE        MAE         MPE      MAPE      MASE
+Training set -0.00220553 0.04333907 0.02966952 -0.05188677 0.6181671 0.5017093
+                    ACF1
+Training set -0.02887885</code></pre>
+</div>
+</div>
+<p><strong>Hydrocarbon</strong></p>
+<p>The SARIMA model that minimizes AIC and AICc is SARIMA(1,1,2)(0,1,1)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-75-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: hydro_ts 
+ARIMA(1,1,2)(0,1,1)[12] 
+
+Coefficients:
+         ar1      ma1     ma2     sma1
+      0.6838  -1.2657  0.3178  -0.8718
+s.e.  0.1003   0.1177  0.0981   0.0302
+
+sigma^2 = 0.005473:  log likelihood = 688.21
+AIC=-1366.43   AICc=-1366.32   BIC=-1344.55
+
+Training set error measures:
+                      ME       RMSE        MAE        MPE     MAPE      MASE
+Training set 0.003801311 0.07292737 0.05689759 0.09963854 2.964171 0.6705054
+                    ACF1
+Training set 0.002831291</code></pre>
+</div>
+</div>
+<p><strong>Natural Gas</strong></p>
+<p>The SARIMA model that minimizes AIC and AICc is SARIMA(1,1,1)(0,1,2)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-77-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: natural_ts 
+ARIMA(1,1,1)(0,1,2)[12] 
+
+Coefficients:
+         ar1      ma1     sma1     sma2
+      0.5435  -0.9253  -0.6784  -0.0909
+s.e.  0.0438   0.0183   0.0439   0.0449
+
+sigma^2 = 0.002253:  log likelihood = 952.42
+AIC=-1894.85   AICc=-1894.75   BIC=-1872.97
+
+Training set error measures:
+                      ME       RMSE        MAE        MPE      MAPE     MASE
+Training set 0.002460763 0.04678813 0.03593403 0.04625378 0.7828864 0.655979
+                    ACF1
+Training set 0.004392229</code></pre>
+</div>
+</div>
+<p><strong>Petroleum</strong></p>
+<p>The SARIMA model that minimizes AIC, BIC, and AICc is SARIMA(0,1,1)(1,1,1)</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-79-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: petro_ts 
+ARIMA(0,1,1)(1,1,1)[12] 
+
+Coefficients:
+          ma1     sar1     sma1
+      -0.8639  -0.1659  -0.8360
+s.e.   0.0226   0.0469   0.0289
+
+sigma^2 = 0.02081:  log likelihood = 295.28
+AIC=-582.57   AICc=-582.5   BIC=-565.07
+
+Training set error measures:
+                       ME     RMSE       MAE        MPE     MAPE      MASE
+Training set -0.001821531 0.142328 0.1073413 -0.7744743 6.447119 0.6979237
+                   ACF1
+Training set 0.01685106</code></pre>
+</div>
+</div>
+</section>
+<section id="fit-a-sarimapdqpdq-model-using-auto.arima" class="level3">
+<h3 class="anchored" data-anchor-id="fit-a-sarimapdqpdq-model-using-auto.arima">5) Fit a SARIMA(p,d,q)(P,D,Q) model using auto.arima()</h3>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: coal_ts 
+ARIMA(1,1,1)(0,1,2)[12] 
+
+Coefficients:
+         ar1      ma1     sma1     sma2
+      0.7153  -0.9330  -0.7101  -0.0771
+s.e.  0.0468   0.0262   0.0463   0.0433
+
+sigma^2 = 0.001933:  log likelihood = 997.03
+AIC=-1984.07   AICc=-1983.97   BIC=-1962.19</code></pre>
+</div>
+</div>
+<p>The model chosen was ARIMA(1,1,1)(0,1,2) which is the same as I chose via manual fitting!</p>
+<p><strong>Hydrocarbon</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: hydro_ts 
+ARIMA(2,0,1)(2,1,2)[12] with drift 
+
+Coefficients:
+         ar1      ar2      ma1     sar1     sar2     sma1     sma2  drift
+      1.2627  -0.2778  -0.8241  -0.4107  -0.1018  -0.4327  -0.3460  6e-04
+s.e.  0.0810   0.0733   0.0587   0.2109   0.0598   0.2094   0.1941  5e-04
+
+sigma^2 = 0.005468:  log likelihood = 693.26
+AIC=-1368.51   AICc=-1368.2   BIC=-1329.12</code></pre>
+</div>
+</div>
+<p>The model chosen was ARIMA(2,0,1)(0,1,2) which is different from my chosen model of ARIMA(1,1,2)(0,1,1).</p>
+<p><strong>Natural Gas</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: natural_ts 
+ARIMA(2,1,1)(1,1,1)[12] 
+
+Coefficients:
+         ar1      ar2      ma1    sar1     sma1
+      0.5500  -0.0177  -0.9225  0.1084  -0.7961
+s.e.  0.0468   0.0442   0.0201  0.0573   0.0396
+
+sigma^2 = 0.002258:  log likelihood = 952.25
+AIC=-1892.51   AICc=-1892.36   BIC=-1866.26</code></pre>
+</div>
+</div>
+<p>The model chosen was ARIMA(2,1,1)(1,1,1) which was different from my chosen model of ARIMA(1,1,1)(0,1,2).</p>
+<p><strong>Petroleum</strong></p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Series: petro_ts 
+ARIMA(0,1,1)(0,0,2)[12] 
+
+Coefficients:
+          ma1    sma1    sma2
+      -0.8842  0.0798  0.1886
+s.e.   0.0214  0.0443  0.0378
+
+sigma^2 = 0.0244:  log likelihood = 262.41
+AIC=-516.83   AICc=-516.76   BIC=-499.24</code></pre>
+</div>
+</div>
+<p>The model chosen was ARIMA(0,1,1)(0,0,2) which was slightly different from my chosen model of ARIMA(0,1,1)(1,1,1). The seasonal effects were handled differently by auto.arima()</p>
+</section>
+<section id="forecast-3" class="level3">
+<h3 class="anchored" data-anchor-id="forecast-3">6) Forecast</h3>
+<p>Forecasting CO2 Emissions by source for the next 5 years</p>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-84-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Hydrocarbon</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-85-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Natural Gas</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-86-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Petroleum</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-87-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>According to our models, coal emissions are expected to continue their steep downwards trend over the next 5 years, while CO2 Emissions from Petroleum are also expected to decrease over the next 5 years - albeit slightly less dramatically. CO2 emissions from both Hydrocarbon Gas and Natural Gas are forecasted to increase over the next 5 years.</p>
+</section>
+<section id="benchmark-2" class="level3">
+<h3 class="anchored" data-anchor-id="benchmark-2">7) Benchmark</h3>
+<p>Compare the models to baseline benchmark methods to ensure they’re performing above.</p>
+<p><strong>Coal</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-88-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>All benchmark methods predict CO2 emissions to stay steady or increase over the next 5 years. It looks like our model outperforms the benchmark methods.</p>
+<p><strong>Hydrocarbon</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-89-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Both fit and seasonal naive methods predict an upward trend in CO2 emissions, with seasonal variation preserved. Drift, mean, and naive methods predict constant emissions and our model is far better.</p>
+<p><strong>Natural Gas</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-90-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Drift, Mean and Naive methods predict constant emissions over the next 5 years. Seasonal naive predicts increasing CO2 emissions with seasonal variation, but the fit outperforms seasonal naive and it follows the trend slightly better.</p>
+<p><strong>Petroleum</strong></p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-91-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The fit and seasonal naive preserve the seasonal variation but the model fit forecasts decreasing CO2 emissions (following the trend) and seasonal naive predicts increasing seasonal variation. Drift, mean, and naive benchmark methods again severely underperform.</p>
+</section>
+<section id="seasonal-cross-validation" class="level3">
+<h3 class="anchored" data-anchor-id="seasonal-cross-validation">8) Seasonal Cross Validation</h3>
+<p><em>1 Step Ahead</em></p>
+<p><strong>Coal</strong> ARIMA(1,1,1)(0,1,2) for both auto.arima() and manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.04619373 0.04570981 0.04725047 0.04745566 0.04854170 0.04904679
+ [7] 0.04993501 0.05057058 0.05137274 0.05206507 0.05282980 0.05354680
+[13] 0.05429527 0.05502300 0.05576439 0.05649678 0.05723510 0.05796952
+[19] 0.05870651 0.05944180 0.06017821 0.06091388 0.06165004 0.06238588
+[25] 0.06312193 0.06430790 0.06632118 0.06833454 0.07034785 0.07236119
+[31] 0.07437451 0.07638784 0.07840117 0.08041450 0.08242783 0.08444115
+[37] 0.08645448 0.08846781 0.09048114 0.09249447 0.09450779 0.09652112
+[43] 0.09853445 0.10054778 0.10256111 0.10457443 0.10658776 0.10860109
+[49] 0.11061442 0.11262775 0.11464107 0.11665440 0.11866773 0.12068106
+[55] 0.12269439 0.12470771 0.12672104 0.12873437 0.13074770 0.13276103</code></pre>
+</div>
+</div>
+<p><strong>Hydrocarbon</strong> ARIMA(2,0,1)(0,1,2) for auto.arima() and ARIMA(1,1,2)(0,1,1) from manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.07974090 0.21231107 0.34844198 0.43904916 0.46729056 0.43355642
+ [7] 0.35332484 0.25158786 0.15561699 0.08803235 0.06183177 0.07836086
+[13] 0.12837006 0.19553350 0.26127758 0.30958432 0.33059942 0.32230591
+[19] 0.29008470 0.24452063 0.19819837 0.16239099 0.14446263 0.14653472
+[25] 0.16559137 0.19482700 0.22575927 0.25050036 0.26361288 0.26314655
+[31] 0.25069987 0.23060751 0.20855614 0.19003452 0.17901631 0.17716960
+[37] 0.18372372 0.19594748 0.21004964 0.22223107 0.22961376 0.23083438
+[43] 0.22619708 0.21740091 0.20695879 0.19748680 0.19105279 0.18873644
+[49] 0.19048299 0.19525160 0.20138694 0.20709667 0.21090569 0.21197878
+[55] 0.21024853 0.20634046 0.20133780 0.19646233 0.19275939 0.19086346</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.08971719 0.09637873 0.09879890 0.09967010 0.09997514 0.10007317
+ [7] 0.10009549 0.10009014 0.10007468 0.10005553 0.10003503 0.10001403
+[13] 0.09999286 0.09997162 0.09995036 0.09992909 0.09990782 0.09988655
+[19] 0.09986527 0.09984400 0.09982272 0.09980145 0.09978017 0.09975890
+[25] 0.09973762 0.09971635 0.09969508 0.09967380 0.09965253 0.09963125
+[31] 0.09960998 0.09958870 0.09956743 0.09954615 0.09952488 0.09950361
+[37] 0.09948233 0.09946106 0.09943978 0.09941851 0.09939723 0.09937596
+[43] 0.09935468 0.09933341 0.09931213 0.09929086 0.09926959 0.09924831
+[49] 0.09922704 0.09920576 0.09918449 0.09916321 0.09914194 0.09912066
+[55] 0.09909939 0.09907812 0.09905684 0.09903557 0.09901429 0.09899302</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-93-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>From this, it appears that ARIMA(2,0,1)(0,1,2) has much more variable RMSE, but overall is a better fit model</p>
+<p><strong>Natural gas</strong> ARIMA(2,1,1)(1,1,1) for auto.arima() and ARIMA(1,1,1)(0,1,2) from manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.05279172 0.17922373 0.31912281 0.42672446 0.48067602 0.48246156
+ [7] 0.44856163 0.40070412 0.35771745 0.33088375 0.32303682 0.33045894
+[13] 0.34610679 0.36277882 0.37530316 0.38141445 0.38148409 0.37755569
+[19] 0.37219683 0.36756755 0.36491146 0.36448378 0.36579586 0.36800119
+[25] 0.37026257 0.37199741 0.37296817 0.37324094 0.37306752 0.37275048
+[31] 0.37253697 0.37256333 0.37285056 0.37333544 0.37391662 0.37449699
+[37] 0.37501116 0.37543457 0.37577755 0.37607094 0.37635031 0.37664385
+[43] 0.37696642 0.37731945 0.37769487 0.37808058 0.37846534 0.37884186
+[49] 0.37920762 0.37956414 0.37991518 0.38026490 0.38061650 0.38097161
+[55] 0.38133027 0.38169145 0.38205372 0.38241579 0.38277683 0.38313660</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.05169864 0.08091653 0.09517965 0.10221910 0.10576896 0.10763298
+ [7] 0.10868248 0.10933841 0.10980416 0.11017801 0.11050744 0.11081540
+[13] 0.11111299 0.11140556 0.11169571 0.11198468 0.11227308 0.11256121
+[19] 0.11284921 0.11313715 0.11342505 0.11371294 0.11400082 0.11428870
+[25] 0.11457658 0.11486445 0.11515233 0.11544020 0.11572808 0.11601595
+[31] 0.11630383 0.11659170 0.11687958 0.11716745 0.11745533 0.11774320
+[37] 0.11803108 0.11831895 0.11860683 0.11889470 0.11918258 0.11947045
+[43] 0.11975833 0.12004620 0.12033408 0.12062195 0.12090983 0.12119770
+[49] 0.12148558 0.12177345 0.12206133 0.12234920 0.12263708 0.12292495
+[55] 0.12321283 0.12350070 0.12378858 0.12407645 0.12436433 0.12465220</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-94-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>From this analysis, it looks like ARIMA(2,1,1)(1,1,1) is a better fit model.</p>
+<p><strong>Petroleum</strong> ARIMA(0,1,1)(0,0,2) for auto.arima() and ARIMA(0,1,1)(1,1,1) from manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.08598773 0.08658462 0.08718152 0.08777841 0.08837531 0.08897220
+ [7] 0.08956909 0.09016599 0.09076288 0.09135978 0.09195667 0.09255356
+[13] 0.09315046 0.09374735 0.09434425 0.09494114 0.09553803 0.09613493
+[19] 0.09673182 0.09732872 0.09792561 0.09852250 0.09911940 0.09971629
+[25] 0.10031319 0.10091008 0.10150697 0.10210387 0.10270076 0.10329766
+[31] 0.10389455 0.10449144 0.10508834 0.10568523 0.10628213 0.10687902
+[37] 0.10747591 0.10807281 0.10866970 0.10926660 0.10986349 0.11046038
+[43] 0.11105728 0.11165417 0.11225107 0.11284796 0.11344485 0.11404175
+[49] 0.11463864 0.11523554 0.11583243 0.11642932 0.11702622 0.11762311
+[55] 0.11822001 0.11881690 0.12041907 0.12202312 0.12362717 0.12523122</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] 0.08598773 0.08658462 0.08718152 0.08777841 0.08837531 0.08897220
+ [7] 0.08956909 0.09016599 0.09076288 0.09135978 0.09195667 0.09255356
+[13] 0.09315046 0.09374735 0.09434425 0.09494114 0.09553803 0.09613493
+[19] 0.09673182 0.09732872 0.09792561 0.09852250 0.09911940 0.09971629
+[25] 0.10031319 0.10091008 0.10150697 0.10210387 0.10270076 0.10329766
+[31] 0.10389455 0.10449144 0.10508834 0.10568523 0.10628213 0.10687902
+[37] 0.10747591 0.10807281 0.10866970 0.10926660 0.10986349 0.11046038
+[43] 0.11105728 0.11165417 0.11225107 0.11284796 0.11344485 0.11404175
+[49] 0.11463864 0.11523554 0.11583243 0.11642932 0.11702622 0.11762311
+[55] 0.11822001 0.11881690 0.12041907 0.12202312 0.12362717 0.12523122</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="arma_models_files/figure-html/unnamed-chunk-95-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>From this analysis, it looks like both models perform similarly and have the same RMSE.</p>
+<p><strong>12 steps ahead forecast</strong></p>
+<p><strong>Coal</strong> ARIMA(1,1,1)(0,1,2) for both auto.arima() and manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 525</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3327111</code></pre>
+</div>
+</div>
+<p><strong>Hydrocarbon</strong> ARIMA(2,0,1)(0,1,2) for auto.arima() and ARIMA(1,1,2)(0,1,1) from manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 525</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4455012</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4738333</code></pre>
+</div>
+</div>
+<p>From this analysis, ARIMA(2,0,1)(0,1,2) from auto.arima() has a much lower RMSE.</p>
+<p><strong>Natural gas</strong> ARIMA(2,1,1)(1,1,1) for auto.arima() and ARIMA(1,1,1)(0,1,2) from manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 525</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4328701</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4238351</code></pre>
+</div>
+</div>
+<p>From this analysis, ARIMA(1,1,1)(0,1,2) from manual fitting has a much lower RMSE and is a better fit model for this data.</p>
+<p><strong>Petroleum</strong> ARIMA(0,1,1)(0,0,2) for auto.arima() and ARIMA(0,1,1)(1,1,1) from manual fitting.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 525</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.367206</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.367206</code></pre>
+</div>
+</div>
+<p>From this analysis, it appears that both models perform the same and have the same RMSE. Either is a valid model to work with.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

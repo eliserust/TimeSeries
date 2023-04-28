@@ -1,0 +1,3 @@
+"0","fit3 = Arima(natural_ts,order=c(1,1,1),seasonal=c(0,1,2))"
+"0",""
+"0","plot(natural_ts, col=""blue"")"

@@ -1,0 +1,4 @@
+"0","require(gridExtra)"
+"0","exports1 <- ggAcf(export_ts)"
+"0","exports2 <- ggPacf(export_ts)"
+"0","grid.arrange(exports1, exports2, ncol=2)"

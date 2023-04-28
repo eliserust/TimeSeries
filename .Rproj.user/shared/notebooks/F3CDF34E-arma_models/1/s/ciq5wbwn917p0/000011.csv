@@ -1,0 +1,4 @@
+"0","require(gridExtra)"
+"0","cost1 <- ggAcf(cost_ts)"
+"0","cost2 <- ggPacf(cost_ts)"
+"0","grid.arrange(cost1, cost2, ncol=2)"

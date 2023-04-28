@@ -1,0 +1,6 @@
+"0",""
+"0","# Create time series objects"
+"0","coal_ts <- ts(coal$Output, start = c(1990,1), frequency=1)"
+"0","nuclear_ts <- ts(nuclear$Output, start = c(1990,1), frequency=1)"
+"0","wind_ts <- ts(wind$Output, start = c(1990,1), frequency=1)"
+"0","solar_ts <- ts(solar$Output, start = c(1990,1), frequency=1)"

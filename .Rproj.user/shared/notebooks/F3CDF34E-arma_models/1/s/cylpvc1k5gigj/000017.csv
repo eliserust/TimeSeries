@@ -1,0 +1,4 @@
+"0","require(gridExtra)"
+"0","s1 <- ggAcf(solar_ts)"
+"0","s2 <- ggPacf(solar_ts)"
+"0","grid.arrange(s1, s2, ncol=2)"

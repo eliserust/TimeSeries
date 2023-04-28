@@ -1,0 +1,3 @@
+"0","############## Then look at the residuals ############"
+"0","res.fit<-ts(residuals(fit.reg),star=decimal_date(as.Date(""1990-01-01"",format = ""%Y-%m-%d"")),frequency = 1)"
+"0","res.fit %>% ggtsdisplay()"

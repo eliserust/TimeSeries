@@ -1,0 +1,3 @@
+"0","fit4=arma(solar_ts, order=c(1,2))"
+"2","Warning: Hessian negative-semidefinite"
+"0","plot(solar_ts, col=""blue"")"

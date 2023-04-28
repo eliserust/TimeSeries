@@ -1,0 +1,45 @@
+project:
+  type: website
+
+website:
+  title: "Energy in the U.S."
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - href: index.qmd
+        text: Home
+      - href: aboutme.html
+        text: About Me
+      - href: introduction.qmd
+        text: Introduction
+      - href: datasources.qmd
+        text: Data Sources
+      - href: dataviz.qmd
+        text: Data Visualization
+      - href: eda.qmd
+        text: Exploratory Data Analysis
+      - href: arma_models.qmd
+        text: ARMA/ARIMA/SARIMA Models
+      - href: var.qmd
+        text: ARIMAX/SARIMAX/VAR Models
+      - href: financial.qmd
+        text: Financial Time Series Models (ARCH/GARCH)
+      - href: deeplearning.qmd
+        text: Deep Learning for TS
+      - href: conclusions.qmd
+        text: Conclusions
+      - href: dv.qmd
+        text: Lab0
+
+format:
+  html:
+    theme: journal
+    css: styles.css
+    toc: true
+
+editor: visual
+
+body-header: |
+  ![](energy_header.png)
+

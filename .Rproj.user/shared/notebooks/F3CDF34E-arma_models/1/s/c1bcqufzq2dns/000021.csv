@@ -1,0 +1,3 @@
+"0","fit3=arma(wind_ts, order=c(1,1))"
+"0",""
+"0","plot(wind_ts, col=""blue"")"

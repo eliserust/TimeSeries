@@ -1,0 +1,360 @@
+---
+title: "Lab 10 Assignment"
+author: "Elise Rust"
+
+output: rmdformats::material
+---
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(astsa) 
+library(xts)
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(tidyverse)
+library(TSstudio)
+library(quantmod)
+library(car)
+library(fGarch)
+# library(tidyquant)
+library(plotly)
+library(ggplot2)
+```
+
+
+
+# Problem 1. Read this example and try similar analysis on the dataset "SPCOMP.csv"
+
+<https://rstudio-pubs-static.s3.amazonaws.com/372052_fdab30947be143dfb352094793078a95.html>
+
+```{r}
+spcomp <- read.csv("SPCOMP.csv")
+spcomp$Year <- as.Date(spcomp$Year, format='%Y-%m-%d')
+head(spcomp)
+```
+
+1. Use plotly to provide a plot to compare the behavior of these different variables.
+
+```{r}
+plot1 <- ggplot(spcomp, aes(x=Year, y=`S.P.Composite`, color='S.P.Composite')) +
+  geom_line() +
+  geom_line(aes(x=Year, y=Dividend, color='Dividend')) +
+  geom_line(aes(x=Year, y=Earnings, color='Earnings')) +
+  geom_line(aes(x=Year, y=CPI, color='CPI')) +
+  geom_line(aes(x=Year, y=Long.Interest.Rate, color='Long.Interest.Rate')) +
+  geom_line(aes(x=Year, y=Real.Price, color='Real.Price')) +
+  geom_line(aes(x=Year, y=Real.Dividend, color='Real.Dividend')) +
+  geom_line(aes(x=Year, y=Real.Earnings, color='Real.Earnings')) +
+  geom_line(aes(x=Year, y=Cyclically.Adjusted.PE.Ratio, color='Cyclically.Adjusted.PE.Ratio')) +
+  labs(
+    title = "S&P Composite data",
+    subtitle = "1871 - 2022",
+    x = "Date")+
+  theme_minimal()
+
+ggplotly(plot1) %>%
+  layout(hovermode = "x")
+```
+
+2. Fit a suitable linear model:
+  a. use a train and test set for this analysis
+```{r}
+## Break apart train adn test set
+sample <- sample(c(TRUE, FALSE), nrow(spcomp), replace=TRUE, prob=c(0.7,0.3))
+train  <- spcomp[sample, ]
+test   <- spcomp[!sample, ]
+
+# Fit linear model with all variables
+lin_model <- lm(`S.P.Composite` ~ ., data = train)
+summary(lin_model)
+```
+b. here check the significance of the coefficients
+
+The variables with statistically significant coefficients are Year, Dividend, Earnings, CPI, Real.Price, Real.Dividend, Real.Earnings, and Cyclically.Adjusted.PE.Ratio - all at the 1% level. However, there is collinearity between dividend and real dividend, earnings and real earnings. We'll use VIF values of these variables to remove some.
+
+c. remove non-significant variables
+Long.Interest.Rate isn't statistically significant at all so is dropped.
+```{r}
+train_optimal <- train %>%
+  select(-c(Long.Interest.Rate))
+head(train_optimal)
+```
+
+d. also check VIF score, remove variables that has a higher VIF score
+```{r}
+vif(lin_model)
+```
+Dividend, Earnings both have very high VIF values, so they will be removed.
+```{r}
+train_optimal <- train_optimal %>%
+  select(-c(Dividend, Earnings))
+```
+
+e. check  R^2 and RMSE
+```{r}
+r2 <- summary(lin_model)$r.squared
+rmse <- sqrt(mean(lin_model$residuals^2))
+
+cat("The R2 of the model is ", r2, "and the RMSE of the model is ", rmse)
+```
+
+f. fit the best model and get it's residuals to another variable ("lm.residuals")
+
+```{r}
+best_model <- lm(`S.P.Composite` ~ ., data = train_optimal)
+summary(best_model)
+res <- resid(best_model)
+res %>% ggtsdisplay()
+```
+
+g. check correlation in these residuals using an ACF plot and/or you can also use an Augmented Dickey Fuller test.
+
+```{r}
+adf.test(res)
+```
+There is a lot of correlation between the residuals, resulting in an adf.test p-value of 0.4506. Additionally, the ACF/PACF plots indicate that the data is highly non-stationary, so we have to difference the residuals.
+
+```{r}
+res %>% diff() %>% ggtsdisplay()
+```
+After differencing once, the residuals appear to be stationary.
+
+h. fit an arima model to these lm.residuals (use our usual methodology)
+
+Using grid search, I test different values of p,d,q to fit an optimal Arima model.
+
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+i=1
+sp= data.frame()
+ls=matrix(rep(NA,6*24),nrow=24) # roughly nrow = 2x5x3
+
+
+for (p in c(1,3,5))# p=1,3,5
+{
+  for(q in 2:6)# q=1,2,3,4,5
+  {
+    for(d in 1:2)# 0,1
+    {
+      
+      if(p-1+d+q-1<=8)
+      {
+        
+        model<- Arima(res,order=c(p-1,d,q-1),include.drift=TRUE) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+        #print(i)
+        
+      }
+      
+    }
+  }
+}
+
+sp= as.data.frame(ls)
+names(sp)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(sp)
+
+# Minimum AIC, BIC, AICc
+sp[which.min(sp$AIC),] # 4,1,3
+sp[which.min(sp$BIC),] # 0,1,5
+sp[which.min(sp$AICc),] #4,1,3
+```
+
+From these results, Arima(4,1,3) minimizes AIC and AICc while Arima(0,1,5) minimizes BIC.
+
+i. get the residuals of the arima model into another variable ("arima.res")
+
+```{r, warning=FALSE}
+arima_model <- Arima(res,order=c(4,1,3),include.drift=TRUE) 
+arima_res = resid(arima_model)
+```
+
+j. fit an ARCH/GARCH model to these arima residuals
+
+Test different ARCH/GARCH models and select the one with the lowest AIC. 
+
+Look at Squared Residuals PACF for potential p values for Arch/Garch model.
+```{r}
+squared.res.arima=arima_res^2
+pacf(squared.res.arima)
+```
+
+```{r, warning=FALSE}
+# FIT GARCH models
+ARCH <- list() ## set counter
+cc <- 1
+for (p in 1:3) {
+ARCH[[cc]] <- garch(arima_res,order=c(0,p),trace=F)
+cc <- cc + 1
+} 
+
+
+## get AIC values for model evaluation
+ARCH_AIC <- sapply(ARCH, AIC) ## model with lowest AIC is the best
+which(ARCH_AIC == min(ARCH_AIC))
+cat("Minimum AIC is: ", min(ARCH_AIC))
+```
+
+Thus, it appears that ARCH(3) on the residuals of ARIMA(4,1,3) produces the lowest AIC and is therefore the optimal ARIMA+ARCH model.
+
+Check whether your model is similar to this model:
+<https://rstudio-pubs-static.s3.amazonaws.com/372052_fdab30947be143dfb352094793078a95.html>
+
+
+# Problem 2. Fit ARMA+GARCH for daily returns of USD/HKD exchange rates.
+
+Daily USD/HKD (US dollar to Hong Kong dollar) exchange rate from January 1, 2005 to March 7, 2006, altogether 431 days of data. 
+
+a) Plot the returns of USD/HKD exchange rates and comment about the stationarity and volatility of the data.
+
+```{r,warning=FALSE,message=FALSE}
+library(TSA)
+data(usd.hkd)
+
+returns=ts(usd.hkd$r,freq=1)
+plot(ts(usd.hkd$r,freq=1),type='l',xlab='Day',ylab='Return')
+```
+From a first glance, it looks like the data may actually be stationary, but further examination via ACF plot and ADF test is needed. There is definitely volatility in the dataset - around days 0, 150, 200, 270, 300 there are periods of high variability and fluctuations.
+
+
+b) Fit an appropriate ARMA+GARCH for daily returns of USD/HKD exchange rates.
+
+You have to show all the steps to your approach. If you happen to choose two or more different models, compare there AIC to find the best model.
+
+** How do you selected the correct ARMA(p,q) for the data?
+
+The steps to select the correct ARMA(p,q) are:
+1) Plot the PACF/ACF plots of the returns to check for stationarity
+2) Make data stationary if necessary (differencing, log transform)
+3) Select options for p and q
+4) Fit different models and select one with lowest AIC
+
+```{r}
+returns %>% ggtsdisplay()
+```
+The data is already stationary, so no need for further transformations. From the above plots, potential p values are 2 (maybe 3 just to be sure). Potential q values are 2/3.
+
+```{r}
+######################## Check for different combinations ########
+i=1
+d = 0
+rates= data.frame()
+ls=matrix(rep(NA,5*16),nrow=16) # roughly nrow = 2x5x3
+
+
+for (p in 1:4)# p=0,1,2,3
+{
+  for(q in 1:4)# q=1,2,3
+  {
+      if(p-1+d+q-1<=8)
+      {
+        
+        model<- Arima(returns,order=c(p-1,d,q-1),include.drift=TRUE) 
+        ls[i,]= c(p-1,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+        #print(i)
+        
+      }
+  }
+}
+
+rates= as.data.frame(ls)
+names(rates)= c("p","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(rates)
+```
+
+```{r}
+# select best ARMA model
+rates[which.min(rates$AIC),] 
+rates[which.min(rates$BIC),] 
+rates[which.min(rates$AICc),] 
+```
+
+The two model options are ARMA(2,2) and ARMA(0,0)... not entirely sure what an ARMA(0,0) model looks like but we can test it anyways.
+
+** What do you see when you check the standardized residuals plot? Do you think further modeling is needed?
+
+I look at the 
+
+```{r}
+arima.fit1<-Arima(returns,order=c(2,0,2),include.drift = FALSE)
+arima.fit2 <- Arima(returns, order=c(0,0,0), include.drift=FALSE)
+arima.res1<-arima.fit1$residuals
+arima.res2<-arima.fit2$residuals
+
+acf(arima.res1)
+acf(arima.res2)
+```
+For model 1 (ARMA(2,2)),there is no statistically significant correlation to any other lags. Thus, further modeling is not appropriate.
+
+** If you decided on further modeling how do you choose the appropriate GARCH(p,q) model?
+
+However, if I WERE to perform further modeling with GARCH, I would perform the following steps:
+1) Identify statistically significant lags in the ACF/PACF plots of the standardized residuals
+2) Test different parameters
+3) Choose the GARCH model that minimized AIC
+4) Fit a final ARMA(2,2) model and then fit a final GARCH model with chosen parameters on the ARMA residuals
+
+** What is your chosen best ARMA+GARCH model? 
+
+NA
+
+** What can you say about your final model? What can you say about it's residuals by according to the Box Ljung test results from the model?
+
+```{r}
+Box.test(arima.res1,type = "Ljung")
+```
+According to the Box Ljung test, which produces a p-value of 0.7779, the distribution of the residuals of my final model (ARMA(2,2)) are not statistically significantly different from a normal distribution; therefore, we can assume normality.
+
+c) Write the equation of your model.
+
+```{r}
+summary(arima.fit1)
+```
+
+Example:
+
+$\phi(B) x_t = \delta + \theta(B) y_t$,
+
+where $\phi(B)=1-1.2975 B + 0.9816B^2$; and  $\theta(B)=1+1.3413 B - 1.0B^2 B^q$
+
+
+d) Try fitting AR(1) + GARCH(3,1) to this data and compare it with your fitted model.
+```{r}
+arima.fit<-Arima(returns,order=c(1,0,0),include.drift = FALSE)
+arima.res <- arima.fit$residuals
+final.fit <- garchFit(~garch(3,1), arima.res, trace = F)
+summary(final.fit)
+```
+The model I fit had an AIC value of -1917.807, while the AR(1) and GARCH(3,1) model has an AIC value of -4.760435. The lower AIC value indicates a better model fit, and thus my model of ARMA(2,2) looks like a better fit for this data.
+
+
+# Problem 3.  (Don't have to submit, but please try)
+
+Fitting a GARCH model to the sp500w data: (Note that this is "weekly" data) 
+
+a). Plot Weekly closing returns of the SP 500 from 2003 to September, 2012 and comment on the volatality.
+
+```{r}
+autoplot(sp500w)+ ggtitle('Weekly Growth Rate of S&P 500')
+```
+
+b). Plot the ACF and PACF of closing returns of the SP 500 data, What can you deduce from this graphs?
+
+c). Plot ACF and PACF of squared returns of the SP 500 data, what do you see? Do you think ARCH/GARCH model is appropriate? Why? What is your suggested GARCH model for the data?
+
+e). Fit your choice of the GARCH model to the data.
+
+f). Fit AR(3)–GARCH(1,1) as the example discussed in example(note that the example was on monthly data) do you still observe the need to drop all the AR parameters? Also, is this different fro what you have chosen?
+
+
+

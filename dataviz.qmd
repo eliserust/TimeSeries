@@ -1,0 +1,230 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "Data Viz"
+author: "Elise Rust"
+---
+
+Data Visualization is the first step to understanding the major trends and patterns in our data. Before modeling or analyzing the data sources collected on the [Data Sources](datasources.html) page, we visualize key questions around energy production, consumption, and cost in the United States using **Plotly, ggplot, and Tableau**.
+
+<br>
+
+```{r, include=FALSE, warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(plotly)
+library(stringr)
+library(lubridate)
+library(zoo)
+library(ggfortify)
+library(imputeTS)
+library(RColorBrewer)
+library(scales)
+library(stringr)
+```
+
+***Plot 1 - Total Electricity Production Across Fuel Sources***
+
+Source: [EIA.gov](https://www.eia.gov/electricity/data/state/)
+
+```{r, warning=FALSE, include=FALSE}
+# Load in data
+energy_sources <- read_excel("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/annual_generation_state.xls", 
+                             skip = 1)
+energy_sources <- as.data.frame(energy_sources)
+head(energy_sources)
+
+# Data cleaning
+energy_sources$year <- as.Date(as.yearmon(energy_sources$YEAR))
+energy_sources$`TYPE OF PRODUCER` <- as.factor(energy_sources$`TYPE OF PRODUCER`)
+energy_sources$`ENERGY SOURCE` <- as.factor(energy_sources$`ENERGY SOURCE`)
+
+# Missing values
+colSums(is.na(energy_sources))
+energy_sources <- energy_sources %>% drop_na()
+
+# Calculate energy use by source, sum each year
+df1 <- energy_sources %>%
+  filter(`TYPE OF PRODUCER` == "Total Electric Power Industry") %>%
+  filter(`ENERGY SOURCE`!= "Total" & `ENERGY SOURCE`!="Other" & `ENERGY SOURCE`!="Other Biomass" & `ENERGY SOURCE`!="Other Gases") %>%
+  group_by(YEAR, `ENERGY SOURCE`) %>%
+  summarise(Output = sum(`GENERATION (Megawatthours)`))
+  #mutate(Output = format(Output, scientific = FALSE, big.mark = ","))
+#write.csv(df1, "clean_energy_sources.csv")
+```
+
+```{r, warning = FALSE, echo=FALSE}
+# Visualize
+g1 <- ggplot(df1, aes(x=YEAR, y = Output, color=`ENERGY SOURCE`)) +
+  geom_line(aes(linetype=`ENERGY SOURCE`, show.legend = FALSE)) +
+   labs(
+    title = "Total United States Electricity Production, by Energy Source",
+    subtitle = "From 1990-2022",
+    x = "Year",
+    y = "Megawatthours")+
+  #scale_color_brewer("Spectral") +
+  theme_minimal() +
+  theme(text = element_text(family="Serif"))
+
+
+ggplotly(g1, tooltip = c("YEAR", "Output", "ENERGY SOURCE")) %>%
+  layout(hovermode = "x",
+         title = list(text = paste0('Total United States Electricity Production, by Energy Source', '<br>','<sup>','From 1990-2022','</sup>')))
+```
+
+The Energy Information Administration provides data on total electricity production broken down by state and fuel source between 1990 and 2022. State totals are aggregated so show national trends of different fuel sources over time. The fuel sources are comprised of sustainable energy sources such as wind, solar, geothermal, as well as dirtier energy like coal and petroleum. In 1990, coal was by far the leading fuel source nationwide at 3.2 billion Megawatthours produced. Solar was the smallest fuel sector at only 700,000 Megawatthours produced. Throughout the next decade, most fuel sources trended upwards as the population grew and generated an increased demand for electricity. Coal production peaked in 2007 at 40 billion Megawatthours before beginning a steady decline down to its lowest in 2020 at 1 billion Megawatthours.
+
+2008 marked a shift in electricity production away from coal towards natural gas, which overtook coal as the most abundant fuel source in 2015. Other cleaner energy sources, such as wind and solar, started to see notable growth as early as 2010, likely in response to growing public awareness of climate change. <br>
+
+***Plot 2 - Energy Production by State***
+
+Source: [EIA.gov](https://www.eia.gov/electricity/data/state/)
+
+```{r, include=FALSE}
+df2 <- energy_sources %>%
+  filter(`TYPE OF PRODUCER` == "Total Electric Power Industry") %>%
+  filter(`ENERGY SOURCE`== "Total") %>%
+  filter(STATE != "US-TOTAL" & STATE != "US-Total")
+```
+
+```{r, echo=FALSE, warning=FALSE}
+#display.brewer.all()
+
+colourCount = length(unique(df2$STATE))
+getPalette = colorRampPalette(brewer.pal(colourCount, "Pastel2"))
+
+p <- ggplot(df2, aes(x = YEAR, y = `GENERATION (Megawatthours)`, fill = reorder(STATE, -`GENERATION (Megawatthours)`)), colour="black") +
+  geom_area() +
+  theme_minimal() +
+  theme(text = element_text(family="Serif")) +
+  labs(
+    x = "Year",
+    y = "Megawatt Hours of Electricity Production",
+    title = "Megawatt Hours of Electricity Production"
+  ) +
+  scale_fill_manual(values=getPalette(colourCount)) +
+  scale_y_continuous(labels = label_comma()) +
+  guides(fill=guide_legend(title="State"))
+
+ggplotly(p) %>%
+  layout(hovermode = "x",
+         title = list(text = paste0('Total Electricity Production by State',
+                                    '<br>',
+                                    '<sup>',
+                                     '1990 - 2022  ','</sup>',
+                                    '<sup>',
+                                     '(States are ordered from most to least production)','</sup>')))
+```
+
+In order to break down which states are the largest producers of electricity - and therefore which states should be the focus of energy security and resilience efforts - electricity production by state is visualized. Between 1990 - 2022, the electricity production of each state is visualized and stacked against each other, ranked from most to least. The largest producer is by far Texas at 480 million Megawatt Hours in 2022. Texas is the [only state with its own power grid](https://www.kut.org/energy-environment/2021-07-22/texas-electric-grid-february-blackouts-the-disconnect), making it even more vulnerable to future meltdowns. Given the [failure of the Texas grid in 2022](https://www.texastribune.org/2022/02/15/texas-power-grid-winter-storm-2021/), this makes Texas a great state to prioritize for electric grid resilience projects.
+
+After Texas, Pennsylvania is #2 at only 246 million Megawatt Hours in 2022, with Florida and California close behind at 240 and 197 million Megawatt Hours, respectively.
+
+<br> ***Plot 3 - Petroleum Exports vs. Imports***
+
+Source: [Table 3.1 Petroleum Overview](https://www.eia.gov/totalenergy/data/monthly/)
+
+This plot was generated using Tableau.
+
+```{r, include=FALSE}
+# Load in petroleum data
+petroleum <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/petroleum.csv")
+
+# Filter
+# petroleum <- petroleum %>%
+#   filter(Description == c("Petroleum Exports", "Petroleum Imports", "Total Petroleum Field Production"))
+
+# Fix date
+petroleum$year <- str_sub(petroleum$YYYYMM, 1, 4)
+petroleum$month <- str_sub(petroleum$YYYYMM, 5, 6)
+
+petroleum <- petroleum %>%
+  filter(month == "13") %>% # Yearly averages %>%
+  select(c(year, Description, Value))
+
+write.csv(petroleum, "petroleum_clean.csv")
+```
+
+![](petroleum.png){width="120%"} A key indicator of energy resilience is the ratio of imports and exports of different fuels. Plot 3 examines Petroleum imports and exports in the U.S. between 1945 to 2022, as well as total petroleum field production. [The Council on Foreign Relations](https://www.cfr.org/timeline/oil-dependence-and-us-foreign-policy) offers a complete and thorough timeline of the U.S.' dependence on oil and how it affects foreign relations - which helps explain some of the trends seen in the chart above.
+
+Petroleum exports (green) were constant until about 1980, when a slow upward trend began and then turned into exponential growth in 2005. The 1980s uptick is due to the diversification of U.S. energy consumption when the Reagan administration deregulated crude oil prices in 1981. The rapid growth in 2005 parallels an uptick in total petroleum field production and the U.S.' commitment towards energy independence.
+
+Petroleum imports (red) have consistently been higher than exports over the last 80 years. Exports rose steadily in the 60s as a result of a legislative import quota, and then spiked in 1973 when the the import quota ended. Imports dropped in 1980 when Carter signed the Energy Security Act into law - which incentivized use of alternative fuel sources. Imports then grew over the next 30 years before dropping in 2007 as more national petroleum was produced and the US loosened its reliance on foreign petroleum.
+
+<br> ***Plot 4 - Cost of Energy*** [Table 3.3 Consumer Price Estimates for Energy by Source, 1970-2010](https://www.eia.gov/totalenergy/data/annual/)<br>
+
+```{r, include=FALSE}
+cost <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/Price_Clean.csv", skip = 2)
+
+# Clean data
+cost <- cost %>%
+  select(-c("PET1", "PET2", "PET3", "PET4", "PET5", "PET6", "PET7", "Total")) %>%
+  gather(key = "Fuel", value = "Cost", -Year)
+```
+
+<br>
+
+```{r, echo=FALSE}
+g3 <- ggplot(cost, aes(x = Year, y = Cost, fill = Fuel)) +
+  geom_bar(stat="identity") +
+  labs(
+    main = "Consumer Price Estimates for Energy by Source",
+    subtitle = "1970-2010",
+    x = "Year",
+    y = "Dollars per Million Btu"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette="Dark2", direction=-1)
+
+ggplotly(g3) %>%
+  layout(hovermode = "x",
+         title = list(text = paste0('Consumer Price Estimates for Energy by Source',
+                                    '<br>',
+                                    '<sup>',
+                                     '1970-2010  ','</sup>')))
+```
+
+Plot 4 examines how the *cost* of different fuel sources has changed over the past 40 years. Wider adoption of cleaner energy is contingent upon its competitiveness with traditional fossil fuels, making this a critical avenue of analysis. Coal, petroleum, and natural gas have all generally trended upwards since 1970, with coal moving from 38 cents/million Btu in 1970 to \$2.42/million Btu in 2010. Natural gas has grown from 59 cents/million Btu to \$7.67/million Btu in 2010. Petroleum has grown from \$1.71 to \$20.32/million Btu in the 30 year span. These price changes constitute a 536%, 1183%, and 1088% increase, respectively.
+
+Cleaner fuels like biomass have grown 167% (\$1.29 to \$3.45/million Btu) while nuclear power grew 245% (\$0.18 to \$0.62/million Btu).
+
+In 2010, the cheapest fuel source was easily nuclear power, with coal and biomass next in line. Thus, this analysis will pay particular attention to nuclear power; exploring the potential benefits and primary concerns surrounding this energy source.
+
+<br> ***Plot 5 - CO2 Emission Trends***<br>
+
+```{r, include=FALSE}
+co2 <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/CO2.csv")
+# Unit is Million Metric Tons of Carbon Dioxide
+
+# Clean data
+co2 <- co2 %>%
+  #spread(Description, Value) %>%
+  mutate(Date = as.Date(paste0(as.character(YYYYMM), '01'), format='%Y%m%d')) %>%
+  select(-c("MSN", "Column_Order", "Unit", 'YYYYMM'))
+
+co2 <- na.omit(co2) # Remove NAs
+co2$Source <- substr(co2$Description,1,nchar(co2$Description)-14)
+```
+
+<br>
+
+```{r, echo=FALSE}
+g3 <- ggplot(co2, aes(x = Date, y = Value, color = Source)) +
+  geom_line() +
+  labs(
+    main = "CO2 Emissions by Source",
+    subtitle = "1970-2010",
+    x = "Year",
+    y = "Million Metric Tons of CO2"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette="Dark2", direction=-1)
+
+ggplotly(g3) %>%
+  layout(hovermode = "x",
+         title = list(text = paste0('CO2 Emissions by Source',
+                                    '<br>',
+                                    '<sup>',
+                                     '1973-2022  ','</sup>')))
+```

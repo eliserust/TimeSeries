@@ -1,0 +1,4 @@
+"0","# require(gridExtra)"
+"0","# coal1 <- ggAcf(coal_ts%>%diff())"
+"0","# coal2 <- ggPacf(coal_ts%>%diff())"
+"0","# grid.arrange(coal1, coal2, ncol=2)"

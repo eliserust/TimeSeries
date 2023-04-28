@@ -1,0 +1,2 @@
+"0","ARW <- arima(wind_ts, order = c(1,2,1))"
+"0","ARW %>% forecast(h=3) %>% autoplot()"

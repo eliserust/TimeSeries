@@ -1,0 +1,5 @@
+"0","require(gridExtra)"
+"0","f1 <- fit1%>%forecast(h=3)%>%autoplot()"
+"0","f2 <- fit2%>%forecast(h=3)%>%autoplot()"
+"0","f3 <- fit3%>%forecast(h=3)%>%autoplot()"
+"0","grid.arrange(f1,f2,f3, ncol=3)"

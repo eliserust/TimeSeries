@@ -1,0 +1,3 @@
+"0","fit1 = Arima(coal_ts,order=c(1,1,1),seasonal=c(0,1,2))"
+"0",""
+"0","plot(coal_ts, col=""blue"")"

@@ -1,0 +1,4 @@
+"0","# Create time series object"
+"0","ets <- ts(data.frame(COAL=coal$log_Output, NUCLEAR=nuclear$log_Output, SOLAR=solar$log_Output, WIND=wind$log_Output), star=decimal_date(as.Date(""1990-01-01"")), frequency = 1)"
+"0",""
+"0","ggAcf(ets)"

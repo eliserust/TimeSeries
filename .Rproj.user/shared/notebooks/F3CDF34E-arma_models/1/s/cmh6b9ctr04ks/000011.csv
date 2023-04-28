@@ -1,0 +1,2 @@
+"0","ARN <- arima(nuclear_ts, order = c(1,2,2))"
+"0","ARN %>% forecast(h=3) %>% autoplot()"

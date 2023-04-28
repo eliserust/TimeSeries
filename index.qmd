@@ -1,0 +1,29 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "A Time Series Analysis of Energy in the United States"
+---
+
+<br>
+
+*A study by Elise Rust as part of the Georgetown MS in Data Science degree*
+
+*Spring 2023*
+
+<br>
+
+Energy and power are at the center of all aspects of modern civilization. Human society's food, transportation, communication, infrastructure, and more are connected to and dependent on "the grid." The resilience of that grid, the sources of power for that grid, and the ways in which our energy consumption ebbs and flows are at the forefront of technological development, public policy, and economic analysis and this study will delve into it all through the lens of statistical time series analysis.
+
+Check out the project below!
+
+-   [About Me](aboutme.html)
+-   [Introduction](introduction.html)
+-   [Data Sources](datasources.html)
+-   [Data Visualization](dataviz.html)
+-   [Exploratory Data Analysis](eda.html)
+-   [ARMA/ARIMA/SARIMA Models](arma_models.html)
+-   [ARIMAX/SARIMAX/VAR Models](var.html)
+-   [Spectral Analysis](spectral.html)
+-   [Financial Time Series Models](financial.html)
+-   [Deep Learning for TS](deeplearning.html)
+-   [Conclusions](conclusions.html)

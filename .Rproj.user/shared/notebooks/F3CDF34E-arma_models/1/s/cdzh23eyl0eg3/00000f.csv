@@ -1,0 +1,4 @@
+"0","require(gridExtra)"
+"0","prod1 <- ggAcf(production_ts)"
+"0","prod2 <- ggPacf(production_ts)"
+"0","grid.arrange(prod1, prod2, ncol=2)"

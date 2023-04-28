@@ -1,0 +1,321 @@
+"","YEAR","ENERGY SOURCE","Output"
+"1",1990,"Coal",3188022961
+"2",1990,"Geothermal",30868542
+"3",1990,"Hydroelectric Conventional",585731691
+"4",1990,"Natural Gas",745530308
+"5",1990,"Nuclear",1153723356
+"6",1990,"Petroleum",252920409
+"7",1990,"Pumped Storage",-7015482
+"8",1990,"Solar Thermal and Photovoltaic",734174
+"9",1990,"Wind",5577200
+"10",1990,"Wood and Wood Derived Fuels",65043779
+"11",1991,"Coal",3181245497
+"12",1991,"Geothermal",31932889
+"13",1991,"Hydroelectric Conventional",577988380
+"14",1991,"Natural Gas",763106035
+"15",1991,"Nuclear",1225130174
+"16",1991,"Petroleum",239503152
+"17",1991,"Pumped Storage",-9082870
+"18",1991,"Solar Thermal and Photovoltaic",943530
+"19",1991,"Wind",5901901
+"20",1991,"Wood and Wood Derived Fuels",67450715
+"21",1992,"Coal",3242412080
+"22",1992,"Geothermal",32275924
+"23",1992,"Hydroelectric Conventional",506176008
+"24",1992,"Natural Gas",808148753
+"25",1992,"Nuclear",1237552526
+"26",1992,"Petroleum",200308329
+"27",1992,"Pumped Storage",-8353164
+"28",1992,"Solar Thermal and Photovoltaic",799280
+"29",1992,"Wind",5775045
+"30",1992,"Wood and Wood Derived Fuels",73057326
+"31",1993,"Coal",3380140464
+"32",1993,"Geothermal",33577130
+"33",1993,"Hydroelectric Conventional",560988015
+"34",1993,"Natural Gas",829853596
+"35",1993,"Nuclear",1220582428
+"36",1993,"Petroleum",225576359
+"37",1993,"Pumped Storage",-8071144
+"38",1993,"Solar Thermal and Photovoltaic",924904
+"39",1993,"Wind",6011654
+"40",1993,"Wood and Wood Derived Fuels",75246819
+"41",1994,"Coal",3381387732
+"42",1994,"Geothermal",31070907
+"43",1994,"Hydroelectric Conventional",520251465
+"44",1994,"Natural Gas",920437365
+"45",1994,"Nuclear",1280879664
+"46",1994,"Petroleum",211801967
+"47",1994,"Pumped Storage",-6755650
+"48",1994,"Solar Thermal and Photovoltaic",973244
+"49",1994,"Wind",6894218
+"50",1994,"Wood and Wood Derived Fuels",75874728
+"51",1995,"Coal",3418852933
+"52",1995,"Geothermal",26756516
+"53",1995,"Hydroelectric Conventional",621665491
+"54",1995,"Natural Gas",992115886
+"55",1995,"Nuclear",1346804246
+"56",1995,"Petroleum",149108127
+"57",1995,"Pumped Storage",-5450262
+"58",1995,"Solar Thermal and Photovoltaic",993642
+"59",1995,"Wind",6328507
+"60",1995,"Wood and Wood Derived Fuels",73042161
+"61",1996,"Coal",3590391187
+"62",1996,"Geothermal",28657368
+"63",1996,"Hydroelectric Conventional",694324125
+"64",1996,"Natural Gas",910111156
+"65",1996,"Nuclear",1349457092
+"66",1996,"Petroleum",162822456
+"67",1996,"Pumped Storage",-6176156
+"68",1996,"Solar Thermal and Photovoltaic",1042410
+"69",1996,"Wind",6468139
+"70",1996,"Wood and Wood Derived Fuels",73600624
+"71",1997,"Coal",3690031475
+"72",1997,"Geothermal",29452204
+"73",1997,"Hydroelectric Conventional",712906588
+"74",1997,"Natural Gas",958797337
+"75",1997,"Nuclear",1257288342
+"76",1997,"Petroleum",185109743
+"77",1997,"Pumped Storage",-8079810
+"78",1997,"Solar Thermal and Photovoltaic",1022336
+"79",1997,"Wind",6576070
+"80",1997,"Wood and Wood Derived Fuels",73896882
+"81",1998,"Coal",3747031380
+"82",1998,"Geothermal",29547836
+"83",1998,"Hydroelectric Conventional",646671325
+"84",1998,"Natural Gas",1062514212
+"85",1998,"Nuclear",1347404208
+"86",1998,"Petroleum",257600336
+"87",1998,"Pumped Storage",-8934560
+"88",1998,"Solar Thermal and Photovoltaic",1004946
+"89",1998,"Wind",6051391
+"90",1998,"Wood and Wood Derived Fuels",72676765
+"91",1999,"Coal",3762174445
+"92",1999,"Geothermal",29654027
+"93",1999,"Hydroelectric Conventional",639072060
+"94",1999,"Natural Gas",1112792259
+"95",1999,"Nuclear",1456508247
+"96",1999,"Petroleum",236121680
+"97",1999,"Pumped Storage",-12193798
+"98",1999,"Solar Thermal and Photovoltaic",990164
+"99",1999,"Wind",8975997
+"100",1999,"Wood and Wood Derived Fuels",74081469
+"101",2000,"Coal",3932529192
+"102",2000,"Geothermal",28186316
+"103",2000,"Hydroelectric Conventional",551145196
+"104",2000,"Natural Gas",1202076316
+"105",2000,"Nuclear",1507785880
+"106",2000,"Petroleum",222441930
+"107",2000,"Pumped Storage",-11077720
+"108",2000,"Solar Thermal and Photovoltaic",986750
+"109",2000,"Wind",11186522
+"110",2000,"Wood and Wood Derived Fuels",75189733
+"111",2001,"Coal",3807911886
+"112",2001,"Geothermal",27481002
+"113",2001,"Hydroelectric Conventional",433922088
+"114",2001,"Natural Gas",1278258240
+"115",2001,"Nuclear",1537652616
+"116",2001,"Petroleum",249760444
+"117",2001,"Pumped Storage",-17646890
+"118",2001,"Solar Thermal and Photovoltaic",1085510
+"119",2001,"Wind",13474664
+"120",2001,"Wood and Wood Derived Fuels",70399810
+"121",2002,"Coal",3866260708
+"122",2002,"Geothermal",28982620
+"123",2002,"Hydroelectric Conventional",528657665
+"124",2002,"Natural Gas",1382011491
+"125",2002,"Nuclear",1560128174
+"126",2002,"Petroleum",189134785
+"127",2002,"Pumped Storage",-17485856
+"128",2002,"Solar Thermal and Photovoltaic",1109662
+"129",2002,"Wind",20708558
+"130",2002,"Wood and Wood Derived Fuels",77330078
+"131",2003,"Coal",3947473500
+"132",2003,"Geothermal",28848462
+"133",2003,"Hydroelectric Conventional",551612655
+"134",2003,"Natural Gas",1299815081
+"135",2003,"Nuclear",1527465390
+"136",2003,"Petroleum",238811283
+"137",2003,"Pumped Storage",-17070130
+"138",2003,"Solar Thermal and Photovoltaic",1068002
+"139",2003,"Wind",22374933
+"140",2003,"Wood and Wood Derived Fuels",75058195
+"141",2004,"Coal",3956601096
+"142",2004,"Geothermal",29621949
+"143",2004,"Hydroelectric Conventional",536834613
+"144",2004,"Natural Gas",1420200033
+"145",2004,"Nuclear",1577056774
+"146",2004,"Petroleum",242290114
+"147",2004,"Pumped Storage",-16976420
+"148",2004,"Solar Thermal and Photovoltaic",1150310
+"149",2004,"Wind",28287482
+"150",2004,"Wood and Wood Derived Fuels",76233767
+"151",2005,"Coal",4025746090
+"152",2005,"Geothermal",29383490
+"153",2005,"Hydroelectric Conventional",540642510
+"154",2005,"Natural Gas",1521920511
+"155",2005,"Nuclear",1563972730
+"156",2005,"Petroleum",244450034
+"157",2005,"Pumped Storage",-13115576
+"158",2005,"Solar Thermal and Photovoltaic",1100588
+"159",2005,"Wind",35621098
+"160",2005,"Wood and Wood Derived Fuels",77712835
+"161",2006,"Coal",3981022270
+"162",2006,"Geothermal",29136058
+"163",2006,"Hydroelectric Conventional",578492831
+"164",2006,"Natural Gas",1632881541
+"165",2006,"Nuclear",1574437272
+"166",2006,"Petroleum",128332828
+"167",2006,"Pumped Storage",-13115684
+"168",2006,"Solar Thermal and Photovoltaic",1015412
+"169",2006,"Wind",53178274
+"170",2006,"Wood and Wood Derived Fuels",77524194
+"171",2007,"Coal",4032911166
+"172",2007,"Geothermal",29274426
+"173",2007,"Hydroelectric Conventional",495019949
+"174",2007,"Natural Gas",1793179583
+"175",2007,"Nuclear",1612849506
+"176",2007,"Petroleum",131477959
+"177",2007,"Pumped Storage",-13792704
+"178",2007,"Solar Thermal and Photovoltaic",1223586
+"179",2007,"Wind",68899854
+"180",2007,"Wood and Wood Derived Fuels",78028050
+"181",2008,"Coal",3971602493
+"182",2008,"Geothermal",29679954
+"183",2008,"Hydroelectric Conventional",509662769
+"184",2008,"Natural Gas",1765961199
+"185",2008,"Nuclear",1612416870
+"186",2008,"Petroleum",92485223
+"187",2008,"Pumped Storage",-12576124
+"188",2008,"Solar Thermal and Photovoltaic",1728630
+"189",2008,"Wind",110726201
+"190",2008,"Wood and Wood Derived Fuels",74599709
+"191",2009,"Coal",3511808504
+"192",2009,"Geothermal",30017316
+"193",2009,"Hydroelectric Conventional",546890189
+"194",2009,"Natural Gas",1841957362
+"195",2009,"Nuclear",1597709170
+"196",2009,"Petroleum",77873034
+"197",2009,"Pumped Storage",-9254690
+"198",2009,"Solar Thermal and Photovoltaic",1782359
+"199",2009,"Wind",147772266
+"200",2009,"Wood and Wood Derived Fuels",72100278
+"201",2010,"Coal",3694580557
+"202",2010,"Geothermal",30438426
+"203",2010,"Hydroelectric Conventional",520406138
+"204",2010,"Natural Gas",1975394467
+"205",2010,"Nuclear",1613936602
+"206",2010,"Petroleum",74122027
+"207",2010,"Pumped Storage",-11002264
+"208",2010,"Solar Thermal and Photovoltaic",2424365
+"209",2010,"Wind",189304494
+"210",2010,"Wood and Wood Derived Fuels",74344318
+"211",2011,"Coal",3466860010.67
+"212",2011,"Geothermal",30632136
+"213",2011,"Hydroelectric Conventional",638709806.91
+"214",2011,"Natural Gas",2027377858.48
+"215",2011,"Nuclear",1580408734
+"216",2011,"Petroleum",60364490.15
+"217",2011,"Pumped Storage",-12841032
+"218",2011,"Solar Thermal and Photovoltaic",3635391.31
+"219",2011,"Wind",240353197.26
+"220",2011,"Wood and Wood Derived Fuels",74898133.57
+"221",2012,"Coal",3028085890
+"222",2012,"Geothermal",31124852
+"223",2012,"Hydroelectric Conventional",552480437
+"224",2012,"Natural Gas",2451788351
+"225",2012,"Nuclear",1538662498
+"226",2012,"Petroleum",46379083
+"227",2012,"Pumped Storage",-9900992
+"228",2012,"Solar Thermal and Photovoltaic",8653351
+"229",2012,"Wind",281643429
+"230",2012,"Wood and Wood Derived Fuels",75598260
+"231",2013,"Coal",3162229431.6
+"232",2013,"Geothermal",31549348.16
+"233",2013,"Hydroelectric Conventional",537130765.47
+"234",2013,"Natural Gas",2249671119.7
+"235",2013,"Nuclear",1578032946
+"236",2013,"Petroleum",54328887.48
+"237",2013,"Pumped Storage",-9362066
+"238",2013,"Solar Thermal and Photovoltaic",18071240.77
+"239",2013,"Wind",335679490.88
+"240",2013,"Wood and Wood Derived Fuels",80055073.95
+"241",2014,"Coal",3163420699
+"242",2014,"Geothermal",31753882
+"243",2014,"Hydroelectric Conventional",518733242
+"244",2014,"Natural Gas",2253270228
+"245",2014,"Nuclear",1594331964
+"246",2014,"Petroleum",60463726
+"247",2014,"Pumped Storage",-12347096
+"248",2014,"Solar Thermal and Photovoltaic",35382061
+"249",2014,"Wind",363310565
+"250",2014,"Wood and Wood Derived Fuels",84679451
+"251",2015,"Coal",2704796396
+"252",2015,"Geothermal",31835150
+"253",2015,"Hydroelectric Conventional",498160170
+"254",2015,"Natural Gas",2669336008
+"255",2015,"Nuclear",1594355754
+"256",2015,"Petroleum",56497498
+"257",2015,"Pumped Storage",-10182976
+"258",2015,"Solar Thermal and Photovoltaic",49785807
+"259",2015,"Wind",381437096
+"260",2015,"Wood and Wood Derived Fuels",83857011
+"261",2016,"Coal",2478297308
+"262",2016,"Geothermal",31651614
+"263",2016,"Hydroelectric Conventional",535624306
+"264",2016,"Natural Gas",2758541842
+"265",2016,"Nuclear",1611387896
+"266",2016,"Petroleum",48409612
+"267",2016,"Pumped Storage",-13372254
+"268",2016,"Solar Thermal and Photovoltaic",72108244
+"269",2016,"Wind",453985124
+"270",2016,"Wood and Wood Derived Fuels",81894455
+"271",2017,"Coal",2411670552
+"272",2017,"Geothermal",31853548
+"273",2017,"Hydroelectric Conventional",600665860
+"274",2017,"Natural Gas",2595405056
+"275",2017,"Nuclear",1609899270
+"276",2017,"Petroleum",42779889
+"277",2017,"Pumped Storage",-12989096
+"278",2017,"Solar Thermal and Photovoltaic",106573731
+"279",2017,"Wind",508605389
+"280",2017,"Wood and Wood Derived Fuels",82247038
+"281",2018,"Coal",2298974679
+"282",2018,"Geothermal",31934268
+"283",2018,"Hydroelectric Conventional",585047978
+"284",2018,"Natural Gas",2943686063
+"285",2018,"Nuclear",1614168954
+"286",2018,"Petroleum",50451255
+"287",2018,"Pumped Storage",-11809078
+"288",2018,"Solar Thermal and Photovoltaic",127650632
+"289",2018,"Wind",545334909
+"290",2018,"Wood and Wood Derived Fuels",81872317
+"291",2019,"Coal",1929913623
+"292",2019,"Geothermal",30945434
+"293",2019,"Hydroelectric Conventional",575747461
+"294",2019,"Natural Gas",3177065681
+"295",2019,"Nuclear",1618818524
+"296",2019,"Petroleum",36681487
+"297",2019,"Pumped Storage",-10521488
+"298",2019,"Solar Thermal and Photovoltaic",143873644
+"299",2019,"Wind",591764968
+"300",2019,"Wood and Wood Derived Fuels",77086764
+"301",2020,"Coal",1546785793
+"302",2020,"Geothermal",31779394
+"303",2020,"Hydroelectric Conventional",570547789
+"304",2020,"Natural Gas",3253579279
+"305",2020,"Nuclear",1579757726
+"306",2020,"Petroleum",34682033
+"307",2020,"Pumped Storage",-10642410
+"308",2020,"Solar Thermal and Photovoltaic",178397431
+"309",2020,"Wind",675876097
+"310",2020,"Wood and Wood Derived Fuels",72437887
+"311",2021,"Coal",1795770554
+"312",2021,"Geothermal",31949534
+"313",2021,"Hydroelectric Conventional",503169685
+"314",2021,"Natural Gas",3158721918
+"315",2021,"Nuclear",1556375976
+"316",2021,"Petroleum",38352268
+"317",2021,"Pumped Storage",-10223368
+"318",2021,"Solar Thermal and Photovoltaic",230520113
+"319",2021,"Wind",756393550
+"320",2021,"Wood and Wood Derived Fuels",72925342

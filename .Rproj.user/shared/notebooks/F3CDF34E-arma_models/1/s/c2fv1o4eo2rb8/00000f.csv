@@ -1,0 +1,3 @@
+"0","fit2 = arima(export_ts, order=c(1,1,2))"
+"0",""
+"0","plot(export_ts, col=""blue"")"

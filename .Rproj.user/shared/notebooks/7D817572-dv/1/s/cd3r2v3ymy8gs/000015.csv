@@ -1,0 +1,4 @@
+"0","coin = data.frame(coin) # Turn to dataframe"
+"0","coin <- data.frame(coin,rownames(coin)) "
+"0","colnames(coin)[7] = ""date"" # Set column name to date"
+"0","head(coin)"

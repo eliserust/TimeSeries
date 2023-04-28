@@ -1,0 +1,4 @@
+"0","require(gridExtra)"
+"0","w1 <- ggAcf(wind_ts)"
+"0","w2 <- ggPacf(wind_ts)"
+"0","grid.arrange(w1, w2, ncol=2)"

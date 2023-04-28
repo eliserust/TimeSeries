@@ -1,0 +1,2 @@
+"0","# Load in data"
+"0","cost <- read.csv(""~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/Price_Clean.csv"", skip=2)"

@@ -1,0 +1,26 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "Introduction"
+author: "Elise Rust"
+---
+
+Energy and power are at the center of all aspects of modern civilization. Human society's food, transportation, communication, infrastructure, and more are connected to and dependent on "the grid." The resilience of that grid, the sources of power for that grid, and the ways in which our energy consumption ebbs and flows are at the forefront of technological development, public policy, and economic analysis and this study will delve into it all through the lens of statistical time series analysis.
+
+It is well documented at this point, by the [International Panel on Climate Change](https://www.ipcc.ch/report/ar6/wg2/), most [government organizations](https://www.epa.gov/climateimpacts) and [top educational institutions](https://www.nytimes.com/2021/10/02/opinion/divestment-fossil-fuels-harvard.html), as well as the leading [scientific journals](https://www.scientificamerican.com/article/ai-predicts-warming-will-surpass-1-5-c-in-a-decade/) in America, that the threat of climate change is dire, imminent, and will affect the most vulnerable populations in the country first. The prevalence and intensity of [extreme weather events](https://www.noaa.gov/news/record-drought-gripped-much-of-us-in-2022#:~:text=Billion%2Ddollar%20disasters%20in%202022&text=One%20wildfire%20event%20(wildfires%20across,the%20southern%20and%20southeastern%20U.S.).), such as severe drought and wildfires in the American West and major flooding events across the southeast, are the beginning of climate changes' manifestations in America's daily life. At the most recent global climate summit - [COP 27](https://www.wri.org/insights/cop27-key-outcomes-un-climate-talks-sharm-el-sheikh) - it was agreed upon that many countries should aim to cut energy emissions by up to 57% in order to meet the goal of keeping warming under 1.5 degrees C. In order to do that, a thorough examination of the United States' history of energy use, where our energy comes from, and what a **clean & resilient energy future** might look like is critical. This is the mission of this project.
+
+**Articles/Literature to get you started**: <br> - [U.S. Energy Facts](https://www.eia.gov/energyexplained/us-energy-facts/) <br> - [Assessment of threats to the American power grid](https://energsustainsoc.biomedcentral.com/articles/10.1186/s13705-019-0199-y)<br> - [Energy Sources vs. Health Impacts](https://www.who.int/health-topics/energy-and-health#tab=tab_1)
+
+**Important Questions:**:
+
+1)  How has overall energy consumption changed in the United States in the last 100 years?
+2)  How have energy sources shifted in the United States?
+3)  How has the cost of energy and electricity changed?
+4)  Has the clean energy job market changed in the last 50 years relative to the fossil-fuel sector?
+5)  Can we track major energy infrastructure projects in the United States and their current quality and resiliency status?
+6)  Can we track funding for various energy projects - including clean vs. dirty energy?
+7)  How have carbon emissions relative to various energy sources evolved in recent years?
+8)  What documented health impacts have there been associated with various energy sources?
+9)  To what extent can we document the United States' reliance on domestic vs. foreign energy supplies in recent decades?
+10) How do carbon markets impact the energy sector and how effective are they at offsetting climate change?
+11) What industries have seen the most growth in clean energy usage - and where will future growth likely come from?

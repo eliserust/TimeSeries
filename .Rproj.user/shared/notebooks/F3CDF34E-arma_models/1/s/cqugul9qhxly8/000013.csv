@@ -1,0 +1,1 @@
+"0","coal_ts %>% diff(12) %>% diff() %>% ggtsdisplay()"

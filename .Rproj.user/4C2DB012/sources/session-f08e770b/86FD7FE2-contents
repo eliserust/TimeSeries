@@ -1,0 +1,439 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "Financial Time Series Models"
+---
+
+Here, I use stock market data of the top fossil fuel company: [ExxonMobil](https://corporate.exxonmobil.com/) (\$466.94 billion) and the top renewable energy stock: [Nextera Energy](https://www.nexteraenergy.com/) (\$167 billion) to model the financial data and the volatility of future returns using ARCH/GARCH models.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo=FALSE) 
+
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(astsa) 
+library(xts)
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(tidyverse)
+library(TSstudio)
+library(quantmod)
+library(XML)
+library(plotly)
+library(ggplot2)
+#library(Matrix)
+library(fGarch)
+```
+
+**Data**: Stock tickers = XOM and NEE
+
+```{r}
+# Load the data
+options("getSymbols.warning4.0"=FALSE)
+options("getSymbols.yahoo.warning"=FALSE)
+
+tickers = c("XOM", "NEE")
+#stockEnv <- new.env()
+
+#symbols <- getSymbols(tickers, src="yahoo", env=stockEnv, from = "2012-10-01", to="2022-12-01")
+for (i in tickers){
+  getSymbols(i,
+             from = "2012-10-01",
+             to = "2022-12-01")}
+
+x <- list(
+  title = "date"
+)
+y <- list(
+  title = "value"
+)
+
+exxon <- data.frame(XOM$XOM.Adjusted)
+nee <- data.frame(NEE$NEE.Adjusted)
+exxon_boxplot <- data.frame(XOM) # Get open, close, high, low for candlestick
+nee_boxplot <- data.frame(NEE)
+
+# Fix datetime
+exxon <- data.frame(exxon,rownames(exxon))
+colnames(exxon) <- c("EXXON_Adj", "Dates")
+exxon$Dates<-as.Date(exxon$Dates,"%Y-%m-%d")
+nee <- data.frame(nee,rownames(nee))
+colnames(nee) <- c("NEE_Adj", "Dates")
+nee$Dates<-as.Date(nee$Dates,"%Y-%m-%d")
+```
+
+Candlestick plot of EXXON Prices over the past years, as well as the returns.
+
+```{r}
+exxon_boxplot <- data.frame(exxon_boxplot,rownames(exxon_boxplot))
+colnames(exxon_boxplot) <- c("XOM.Open", "XOM.High", "XOM.Low", "XOM.Close", "XOM.Volume", "XOM.Adjusted", "Dates")
+exxon_boxplot$Dates<-as.Date(exxon_boxplot$Dates,"%Y-%m-%d")
+figc <- exxon_boxplot %>% plot_ly(x = ~Dates, type="candlestick",
+          open = ~XOM.Open, close = ~XOM.Close,
+          high = ~XOM.High, low = ~XOM.Low) 
+figc <- figc %>% layout(title = "XOM Stock Prices 2012-2022")
+
+figc
+
+# Create ts object for returns
+ts.exxon <- ts(exxon$EXXON_Adj, start=decimal_date(as.Date("12-10-01")), frequency = 12)
+# Returns
+ex_returns = diff(log(ts.exxon))
+chartSeries(ex_returns, theme="white")
+```
+
+**Observations:** The XOM candlestick plot shows that XOM stock was between 80 and 100 USD per share between 2012 and 2018, with the exceptions of a few dips in 2016. However, the stock price has seen far more volatility in recent years, especially around 2020 and the beginning of the COVID-19 pandemic. In March 2020 the stock price plummeted to 32 USD per share, making a brief revival in June 2020 back to 50 USD per share, before dropping back to 31 USD per share in November 2020. The returns plot mirrors these findings, indicating that 2019 - 2021 saw a period of high volatility to be examined. The data appears non-stationary.
+
+<br>
+
+Candlestick plot of NEE Prices over the past years, as well as the returns.
+
+```{r}
+nee_boxplot <- data.frame(nee_boxplot,rownames(nee_boxplot))
+colnames(nee_boxplot) <- c("NEE.Open", "NEE.High", "NEE.Low", "NEE.Close", "NEE.Volume", "NEE.Adjusted", "Dates")
+nee_boxplot$Dates<-as.Date(nee_boxplot$Dates,"%Y-%m-%d")
+figc <- nee_boxplot %>% plot_ly(x = ~Dates, type="candlestick",
+          open = ~NEE.Open, close = ~NEE.Close,
+          high = ~NEE.High, low = ~NEE.Low) 
+figc <- figc %>% layout(title = "NEE Stock Prices 2012-2022")
+
+figc
+
+# Create ts object for returns
+ts.nee <- ts(nee$NEE_Adj, start=decimal_date(as.Date("12-10-01")), frequency = 12)
+# Returns
+ne_returns = diff(log(ts.nee))
+chartSeries(ne_returns, theme="white")
+```
+
+**Observations:** The NEE candlestick plot shows that NEE stock has steadily risen since 2012. There are some periods of volatility and stock price drops between 2020 and 2022, as the stock dropped from 67 USD to 46 USD in March 2020 and 92 USD to 73 USD between December 2021 and February 2022. The data is highly non-stationary and will need to be differenced before modeling.
+
+# Fit Model for Returns data for Exxon and Nextera Energy
+
+-   AR+ARCH/GARCH
+-   ARIMA+ARCH/GARCH
+
+## 1) Exxon Data
+
+### ACF/PACF plots of the returns squared
+
+Used to determine if there are any remaining dependence structures not captured by ARCH/GARCH models.
+
+```{r}
+acf(ex_returns^2, na.action = na.pass)
+pacf(ex_returns^2, na.action=na.pass)
+```
+
+The ACF/PACF plot of returns(\^2) help determine if ARCH is sufficient, or whether an AR/ARIMA model needs to be fit. From the ACF plot, I can observe that lags 0-3.0 are correlated with the time series. From the PACF plot I can observe that lags 0-3.0 are again correlated with the time series. Because there are still significant lags on both plots, an ARIMA model should be fitted first and an ARCH model can be fitted to the residuals of the ARIMA model.
+
+### Fit ARIMA model to original data
+
+#### a) Check if original data is stationary
+
+```{r}
+ts.exxon %>% ggtsdisplay()
+adf.test(ts.exxon)
+```
+
+Exxon data is certainly not stationary, as seen from the ACF/PACF plots and ADF test shown above. Thus, to make the data stationary the log of Exxon Adjusted Closing Price is taken, and differencing is undertaken.
+
+```{r}
+log.exxon <- log(ts.exxon)
+log.exxon %>% diff() %>% ggtsdisplay()
+adf.test(log.exxon%>% diff())
+```
+
+Just taking the log of EXXON stock data is not enough...the p-value of the ADF test is still 0.94, indicating that the data remains non-stationary. After differencing the data once, stationarity is achieved.
+
+#### b) Choose p,q,d values
+
+From the above ACF/PACF plots, values of p and q are chosen to investigate. <br>
+Moving average order (found from ACF): q - 1,2,3,5 <br>
+Autoregressive term (found from pACF): p - 1,2,3,5
+
+#### c) Model diagnostics
+
+**Note: There are 98 unique combinations of parameters so only the head of the resulting dataframe is shown.**
+```{r}
+######################## Check for different combinations ########
+i=1
+temp= data.frame()
+ls=matrix(rep(NA,6*30),nrow=30) # roughly nrow = 6x6x2
+
+
+for (p in 1:6)
+{
+  for(q in 1:6)
+  {
+    for(d in c(1))# 
+    {
+      
+      if(p-1+d+q-1<=8)
+      {
+        
+        model<- Arima(log.exxon,order=c(p-1,d,q-1),include.drift=TRUE) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+        #print(i)
+        
+      }
+      
+    }
+  }
+}
+
+temp= as.data.frame(ls)
+names(temp)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(head(temp))
+```
+
+Minimum AIC,BIC,and AICc
+
+```{r, include=FALSE}
+temp[which.min(temp$AIC),] #1,0,1
+temp[which.min(temp$BIC),] #1,0,1
+temp[which.min(temp$AICc),] #1,0,1
+```
+
+Thus, the ARIMA model that minimizes AIC and AICc is ARIMA(2,1,4).
+
+### Calculate residuals of ARIMA model
+
+```{r, warning=FALSE}
+# Fit
+arima1=arima(log.exxon,order=c(2,1,4))
+
+res.arima1=arima1$res
+squared.res.arima1=res.arima1^2
+
+plot(squared.res.arima1,main='Squared Residuals')
+ggAcf(squared.res.arima1,main='ACF Squared Residuals')
+ggPacf(squared.res.arima1,main='PACF Squared Residuals')
+```
+
+**Observations:** The squared residuals plot shows a cluster of volatility, while the ACF and PACF still sees significant spikes at lags 1 - 36. Thus, the residuals show that there are still some patterns that need to be modeled by ARCH/GARCH models. These methods are useful in modeling the conditional variance of the series - I try ARCH(1) through ARCH(24).
+
+### Fit ARCH models and do model diagnostics
+
+I fit a series of GARCH models on the residuals of the ARIMA model, using parameters 0 - 10, and comparing the AIC between them.
+
+```{r}
+# seq(0.1, 2.5, by=0.1)
+# FIT ARCH models
+ARCH <- list() ## set counter
+cc <- 1
+for (p in 1:24) {
+ARCH[[cc]] <- garch(res.arima1,order=c(0,p),trace=F)
+cc <- cc + 1
+} 
+
+## get AIC values for model evaluation
+ARCH_AIC <- sapply(ARCH, AIC) ## model with lowest AIC is the best
+cat("Optimal ARCH order:", which(ARCH_AIC == min(ARCH_AIC)))
+cat("MIN AIC:", min(ARCH_AIC))
+```
+
+It looks like ARCH(10) on the residuals of ARIMA(2,1,4) produces the lowest AIC and is therefore the optimal ARIMA+ARCH model. It has an AIC value of -14705.73. The model equation is below, and I look to the Box Ljung test to ensure that the model adequately represents the residuals. The Box Ljung test returns a p-value of 0.8046, so we can conclude that the model is a good fit.
+
+```{r}
+#summary(arima1)
+arch10=garch(res.arima1,order=c(0,10),trace=F)
+arch10_results = summary(arch10)
+arch10_results$l.b.test
+```
+
+### Model Equation for ARIMA(2,1,4) + ARCH(10)
+<br>
+$$
+\phi(B)x_t = \delta + \theta(B)y_t
+$$ 
+
+Where
+
+$$
+\phi(B) = 1 - 0.8287(B) + 0.1250(B^2)
+$$ 
+
+$$
+\theta(B) = 1 - 0.8547(B) - 0.1718(B^2) + 0.0790(B^3) - 0.0694(B^4)
+$$ 
+
+$$
+yt = \sigma_t\epsilon_t
+$$ 
+
+$$
+\begin{aligned}
+  var(y_t|y_{t-1}) = 4.010e^{-5} + 1.441e^{-1}(y_{t-1})^2 + 1.478e^{-1}(y_{t-2})^2  \\
+  + 1.307e^{-1}(y_{t-3})^2 + 8.557e^{-2}(y_{t-4})^2 + 8.641e^{-2}(y_{t-5})^2 + \\
+  1.255e^{-2}(y_{t-6})^2 + 5.356e^{-2}(y_{t-7})^2 + 1.098e^{-1}(y_{t-8})^2 + \\
+  1.595e^{-2}(y_{t-9})^2 + 1.067e^{-1}(y_{t-10})^2
+\end{aligned}
+$$
+
+
+## 2) NEE Data
+
+### ACF/PACF plots of the returns squared
+Used to determine if there are any remaining dependence structures not captured by ARCH/GARCH models.
+
+```{r}
+acf(ne_returns^2, na.action = na.pass)
+pacf(ne_returns^2, na.action=na.pass)
+```
+
+The ACF/PACF plot of returns(\^2) help determine if ARCH is sufficient, or whether an AR/ARIMA model needs to be fit. From the ACF plot, I can observe that lags 0-1.5 are correlated with the time series. From the PACF plot I can observe that lags 0-1.5 are again correlated with the time series. Because there are still significant lags on both plots, an ARIMA model should be fitted first and an ARCH model can be fitted to the residuals of the ARIMA model.
+
+### Fit ARIMA model first to original data
+
+#### a) Check if original data is stationary
+
+```{r}
+ts.nee %>% ggtsdisplay()
+adf.test(ts.nee)
+```
+
+NEE data is not stationary, as seen from the ACF/PACF plots and ADF test shown above. Thus, to make the data stationary the log of Nee Adjusted Closing Price is taken, and differencing is undertaken. A drift term is also included in this analysis.
+
+```{r}
+log.nee <- log(ts.nee)
+log.nee %>% diff() %>% ggtsdisplay()
+adf.test(log.nee)
+```
+
+Just taking the log of NEE stock data results in a p-value of the ADF test of 0.01244. Thus, we could potentially difference again or not - this will be tested during model validation. The ACF/PACF plots of the logged and first differenced NEE stock data is shown above to assist with choosing p and q values.
+
+#### b) Choose p,q,d values
+
+From the above ACF/PACF plots, values of p and q are chosen to investigate. <br>
+Moving average order (found from ACF): q - 1,4,5,6 <br>
+Autoregressive term (found from pACF): p - 1,4,5,6
+
+#### c) Model diagnostics
+
+*Note: There are 98 unique combinations of parameters so only the head of the resulting dataframe is shown.*
+
+```{r}
+######################## Check for different combinations ########
+i=1
+temp= data.frame()
+ls=matrix(rep(NA,6*98),nrow=98) # roughly nrow = 6x6x2
+
+
+for (p in 1:7)
+{
+  for(q in 1:7)
+  {
+    for(d in 0:1)# 
+    {
+      
+      if(p-1+d+q-1<=8)
+      {
+        
+        model<- Arima(log.nee,order=c(p-1,d,q-1),include.drift=TRUE) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+        #print(i)
+        
+      }
+      
+    }
+  }
+}
+
+temp= as.data.frame(ls)
+names(temp)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(head(temp))
+```
+
+Minimum AIC and AICc
+
+```{r}
+temp[which.min(temp$AIC),] #1,0,1
+temp[which.min(temp$AICc),] #1,0,1
+```
+
+Thus, the ARIMA model that minimizes AIC and AICc is ARIMA(3,0,3).
+
+### Calculate residuals of ARIMA model
+
+```{r, warning=FALSE}
+# Fit
+arima1=arima(log.nee,order=c(3,0,3))
+#summary(arima1)
+
+res.arima1=arima1$res
+squared.res.arima1=res.arima1^2
+
+plot(squared.res.arima1,main='Squared Residuals')
+ggAcf(squared.res.arima1,main='ACF Squared Residuals')
+ggPacf(squared.res.arima1,main='PACF Squared Residuals')
+```
+
+**Observations:** The squared residuals plot shows a cluster of volatility, while the ACF and PACF still sees significant spikes at lags 0 - 12. Thus, the residuals show that there are still some patterns that need to be modeled by ARCH/GARCH models. These methods are useful in modeling the conditional variance of the series - I try ARCH(1) through ARCH(12).
+
+### Fit ARCH models and do model diagnostics
+
+```{r}
+# seq(0.1, 2.5, by=0.1)
+# FIT ARCH models
+ARCH <- list() ## set counter
+cc <- 1
+for (p in 1:12) {
+ARCH[[cc]] <- garch(res.arima1,order=c(0,p),trace=F)
+cc <- cc + 1
+} 
+
+## get AIC values for model evaluation
+ARCH_AIC <- sapply(ARCH, AIC) ## model with lowest AIC is the best
+cat("Optimal ARCH order:", which(ARCH_AIC == min(ARCH_AIC)))
+cat("MIN AIC:", min(ARCH_AIC))
+```
+
+It looks like ARCH(8) on the residuals of ARIMA(3,0,3) produces the lowest AIC and is therefore the optimal ARIMA+ARCH model. It has an AIC value of -15309.36. The model equation is below, and I look to the Box Ljung test to ensure that the model adequately represents the residuals. The Box Ljung test returns a p-value of 0.7907, so we can conclude that the model is a good fit.
+
+```{r}
+#summary(arima1)
+arch8=garch(res.arima1,order=c(0,8),trace=F)
+arch8_results = summary(arch8)
+arch8_results$l.b.test
+```
+```{r, include=FALSE}
+summary(arima1)
+arch8_results
+```
+
+### Model Equation for ARIMA(3,0,3) + ARCH(8)
+<br>
+$$
+\phi(B)x_t = \delta + \theta(B)y_t
+$$ 
+
+Where
+
+$$
+\phi(B) = 1 + 0.6711(B) - 0.8547(B^2) - 0.8164(B^3)
+$$ 
+
+$$
+\theta(B) = 1 + 1.6408(B) + 0.8040(B^2) + 0.0441(B^3)
+$$ 
+
+$$
+yt = \sigma_t\epsilon_t
+$$ 
+
+$$
+\begin{aligned}
+  var(y_t|y_{t-1}) = 6.067e^{-5} + 1.107e^{-1}(y_{t-1})^2 + 8.325e^{-2}(y_{t-2})^2  \\
+  + 6.459e^{-2}(y_{t-3})^2 + 6.155e^{-2}(y_{t-4})^2 + 8.529e^{-2}(y_{t-5})^2 + \\
+  1.075e^{-1}(y_{t-6})^2 + 6.972e^{-2}(y_{t-7})^2 + 7.548e^{-1}(y_{t-8})^2
+\end{aligned}
+$$

@@ -1,0 +1,264 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "Data Vizes in TS"
+---
+
+Elise Rust
+
+ANLY 560
+
+Jan 2023
+
+```{r, include=FALSE}
+
+#install.packages('quantmod')
+library(quantmod)
+library(ggplot2)
+library(tidyverse)
+library(plotly)
+```
+
+### 1. Stock Market Analysis
+
+Take three stocks of streaming companies: Netflix (NFLX), Disney (DIS), and Apple (AAPL).
+
+```{r, echo=FALSE}
+#options("getSymbols.warning4.0"=FALSE)
+#options("getSymbols.yahoo.warning"=FALSE)
+
+tickers = c("NFLX","DIS","AAPL" )
+for (i in tickers){
+  getSymbols(i,
+             from = "2012-10-01",
+             to = "2022-12-01")}
+
+x <- list(
+  title = "date"
+)
+y <- list(
+  title = "value"
+)
+
+stock <- data.frame(NFLX$NFLX.Adjusted,
+                    DIS$DIS.Adjusted,
+                    AAPL$AAPL.Adjusted)
+
+
+stock <- data.frame(stock,rownames(stock))
+colnames(stock) <- append(tickers,'Dates')
+
+stock$date<-as.Date(stock$Dates,"%Y-%m-%d")
+head(stock)
+
+```
+
+```{r, echo=FALSE}
+ggplot(stock, aes(x=date)) +
+  geom_line(aes(y=NFLX, colour="NFLX"))+
+  geom_line(aes(y=DIS, colour="DIS"))+
+  geom_line(aes(y=AAPL, colour="AAPL"))+
+   labs(
+    title = "Stock Prices for the Streaming Services Companies",
+    subtitle = "From 2013-2022",
+    x = "Date",
+    y = "Adjusted Closing Prices")+
+    theme(panel.background = element_rect(fill = "white", colour = "grey50"))+
+    guides(colour=guide_legend(title="Streaming Companies")) 
+```
+
+Now add a hover feature to the plot
+
+```{r, echo=FALSE}
+g4 <- ggplot(stock, aes(x=date)) +
+  geom_line(aes(y=NFLX, colour="NFLX"))+
+  geom_line(aes(y=DIS, colour="DIS"))+
+  geom_line(aes(y=AAPL, colour="AAPL"))+
+   labs(
+    title = "Stock Prices for the Streaming Services Companies",
+    subtitle = "From 2013-2022",
+    x = "Date",
+    y = "Adjusted Closing Prices")+
+    guides(colour=guide_legend(title="Streaming Companies")) 
+
+
+ggplotly(g4) %>%
+  layout(hovermode = "x")
+```
+
+<br>What does the graph say:</br>
+
+Shown here are the adjusted closing stock prices for three streaming services (Netflix, Disney, and Apple) between 2013 and 2022. Netflix was the original streaming giant, founded in 1997 as the first place a user could stream on-demand shows and movies starting in 2007. While they initially dominated the space, and saw a steady uptick in market value through 2019. Disney and Apple are both larger companies that span markets: Disney has a long history of movie production and amusement parks (Disney World and Disney Land) and entered the streaming space with Disney+ in November 2019. Apple historically produced technology (computers, tablets, phones, etc.) and entered the streaming space with AppleTV in 2007. The rise of these competitors - especially Disney+ who, upon launching, removed all Disney films and content from Netflix for their own platform - has caused Netflix to take a hit in their stock price. This is clearly shown in 2019 when NFLX market cap went from 375 to 265 per share. All three companies took a hit at the beginning of the pandemic in March 2020, but bounced back quickly as lockdown forced the global population inside where many turned to streaming services. Netflix stock peaked at 681 per share in November of 2021, but crashed to 186 per share as they've begun to deal with inflation and increased streaming competition.
+
+#### Crypto --\> Coinbase Analysis using Plotly
+
+```{r, echo=FALSE}
+#bitc_ALL <- getSymbols("BTC",auto.assign = FALSE, from = "2020-10-01",src="yahoo")
+coin <- getSymbols("COIN",auto.assign = FALSE, from = "2021-09-15",src="yahoo") 
+head(coin)
+```
+
+```{r, include=FALSE}
+print("Start Date: ")
+print(start(coin))
+print("End Date: ")
+print(end(coin))
+```
+
+```{r, include=FALSE}
+coin = data.frame(coin) # Turn to dataframe
+coin <- data.frame(coin,rownames(coin)) 
+colnames(coin)[7] = "date" # Set column name to date
+head(coin)
+```
+
+```{r, include=FALSE}
+# Fix date formatting
+coin$date<-as.Date(coin$date,"%Y-%m-%d")
+str(coin)
+```
+
+#### GGPlot Plot
+
+```{r, echo=FALSE}
+## ggplot
+coin %>%
+  ggplot()+
+  geom_line(aes(y=COIN.Adjusted,x=date),color="blue")
+```
+
+#### Plotly Plot
+
+```{r, echo=FALSE}
+## plotly
+fig <- plot_ly(coin, x = ~date, y = ~COIN.Adjusted, type = 'scatter', mode = 'lines')
+
+fig <- fig %>% layout(title = "COIN Stock using Plotly")
+fig
+```
+
+What does the graph say:
+
+Cryptocurrency, including Coinbase (\$COIN), has suffered a devastating drop in confidence and value throughout 2022. Market value peaked for COIN in November of 2021, at around 350 per share, before seeing a precipitious drop to just 53.72 by May of 2022. Since then, it has hovered around this lower price per share, with very few indications of gaining value in the near future. 2022 has been widely deemed the beginning of "crypto winter" as a number of high profile companies, including Coinbase, Bitcoin, and terraUSD, saw their market value drop by up to 70%. Many people have attributed this to a pessimistic global macro outlook when the US Fed hiked interest rates and investors pivoted from risky assets like crypto to safer assets.
+
+### 2. Plot the climate data (climate.csv) using Plotly
+
+The original climate dataframe looks like so:
+
+```{r, echo=FALSE}
+
+# Load climate data
+climate <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Labs/ts_intro/climate.csv")
+head(climate)
+
+```
+
+```{r, include=FALSE}
+# Explore data
+print(str(climate))
+
+colSums(is.na(climate))
+```
+
+Data Cleaning and Transformation
+
+```{r, include=FALSE}
+## Datatype conversion of date
+climate$DATE <- as.Date(climate$DATE, format = "%Y-%m-%d")
+climate$Month <- format(as.Date(climate$DATE, format="%Y-%m-%d"),"%m")
+
+# Replace NAs wtih 0
+climate$PRCP[is.na(climate$PRCP)] <- 0
+
+## Groupby + Sum Precipitation by location and month
+precip_df <- climate %>%
+  group_by(NAME, Month) %>%
+  summarise(Monthly_Precip = sum(PRCP))
+
+## Split stations into separate columns
+precip_df <- precip_df %>%
+  spread(NAME, Monthly_Precip)
+
+# Replace NAs wtih 0 again
+precip_df[is.na(precip_df)] <- 0
+
+precip_df
+```
+
+```{r, include=FALSE}
+colnames(precip_df) <- c('Month', 'Dalecarlia_Reservoir', 'National_Arboretum', 'DC1', 'DC2', 'DC2.6', 'DC3.1', 'DC5.1')
+print(colnames(precip_df))
+```
+
+After data cleaning and transformation, we will look at Monthly Precipitation Totals across the different stations. The transformed dataframe looks like:
+
+```{r, echo=FALSE}
+print(precip_df)
+```
+
+```{r, include=FALSE}
+# Convert datatype of Month
+precip_df$Month = as.numeric(precip_df$Month)
+```
+
+###### Plot using Plotly
+
+1)  Daily Precipitation Totals
+
+```{r, echo=FALSE}
+theme_set(theme_minimal())
+
+# New facet labels
+new_labels <- c("DALECARLIA RESERVOIR, MD US"="Dalecarlia", "NATIONAL ARBORETUM DC, MD US"="National Arboretum", "WASHINGTON 1.9 NW, DC US"="DC 1.9NW", "WASHINGTON 2.0 SSW, DC US"="DC 2SSW", "WASHINGTON 2.6 NE, DC US"="DC 2.6NE", "WASHINGTON 3.1 NNE, DC US"="DC 3.1NNE", "WASHINGTON 5.1 NW, DC US"="DC 5.1NE")
+
+g4 <- ggplot(climate, aes(x=DATE, y=PRCP)) +
+  geom_line(aes(color=as.factor(NAME)))+
+   labs(
+    title = "Daily Precipitation Totals Across the DMV",
+    subtitle = "2021",
+    x = "Date",
+    y = "Precipitation Total (in.)")+
+    guides(colour=guide_legend(title="Location")) +
+  facet_wrap(. ~ NAME,ncol=2, labeller = labeller(NAME=new_labels)) +
+  theme(axis.text.x = element_text(angle=45, size=8)) +
+  scale_fill_brewer(palette="Spectral")
+
+
+ggplotly(g4) %>%
+  layout(hovermode = "x")
+```
+
+What the graph is saying:
+
+Seven (7) different monitoring stations across the DC-Maryland-Virginia area have collected precipitation data periodically throughout 2021. Six of the locations are in DC, while Dalecarlia Reservoir is in Bethesda Maryland. The precipitation totals have been plotted by location between January 2021 and January 2022. DC 5.1 NW is the location with the highest precipitation totals, seeing highs in September 2021 (2.12 inches in a day) and October 2021 (over 2 inches multiple days). DC 2 and 2.6 had the lowest precipitation totals, rarely cresting 1 inch of rain any day of the year. The graph does indicate that most of the wards of DC do receive similar rainfall totals, which intuitively makes sense given the small geographic area of the sample. It is notable to see that Ward 5 has higher rainfall, though, so that people living in the area can better prepare for incoming storms.
+
+2.  Monthly Totals
+
+```{r, echo=FALSE}
+theme_set(theme_minimal())
+
+g4 <- ggplot(precip_df, aes(x=Month)) +
+  geom_line(aes(y=Dalecarlia_Reservoir, color="DaleCarlia Resvr."))+
+  geom_line(aes(y=National_Arboretum, color="National Arboretum"))+
+  geom_line(aes(y=DC1, color="DC 1.9 NW"))+
+  geom_line(aes(y=DC2, color="DC 2.0 SSW"))+
+  geom_line(aes(y=DC2.6, color="DC 2.6 NE"))+
+  geom_line(aes(y=DC3.1, color="DC 3.1 NNE"))+
+  geom_line(aes(y=DC5.1, color="DC 5.1 NW"))+
+   labs(
+    title = "Monthly Precipitation Totals Across the DMV",
+    subtitle = "2021",
+    x = "Month",
+    y = "Precipitation Total (in.)")+
+    guides(colour=guide_legend(title="Location")) +
+  scale_x_discrete(name ="Month", 
+                    limits=c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+
+
+ggplotly(g4) %>%
+  layout(hovermode = "x")
+```
+
+What the graph is saying:
+
+The same data as above is being examined, but this time precipitation totals were grouped by month so see cumulative effects. Similar trends are shown - notably, that Ward 5 has higher rainfall than surrounding areas, expecially in August - October, so residents should be prepared for incoming storms. On the whole, each location averages about 3-4 inches of rain per month, with Aug-Oct being the highest rainfall months and Nov-Dec being some of the driest months.

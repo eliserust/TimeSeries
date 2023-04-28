@@ -1,0 +1,1 @@
+"0","natural_ts %>% diff() %>% diff(12) %>% ggtsdisplay()"

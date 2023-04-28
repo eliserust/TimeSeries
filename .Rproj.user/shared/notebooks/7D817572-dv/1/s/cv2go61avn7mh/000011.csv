@@ -1,0 +1,5 @@
+"0","## plotly"
+"0","fig <- plot_ly(coin, x = ~date, y = ~COIN.Adjusted, type = 'scatter', mode = 'lines')"
+"0",""
+"0","fig <- fig %>% layout(title = ""COIN Stock using Plotly"")"
+"0","fig"

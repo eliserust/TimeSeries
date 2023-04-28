@@ -1,0 +1,1703 @@
+![](energy_header.png){width="100%"}
+
+---
+title: "ARMA/ARIMA/SARIMA Models"
+---
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo=FALSE) 
+
+library(tidyverse)
+library(ggplot2)
+library(forecast)
+library(astsa) 
+library(xts)
+library(tseries)
+library(fpp2)
+library(fma)
+library(lubridate)
+library(tidyverse)
+library(TSstudio)
+library(quantmod)
+library(tidyquant)
+library(plotly)
+library(ggplot2)
+```
+
+## Dataset 1 - Electricity Production
+
+```{r}
+energy_sources <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/clean_energy_sources.csv")
+
+energy_sources <- energy_sources %>%
+  mutate(Output = as.double(Output)) %>%
+  mutate(YEAR = as.Date(ISOdate(YEAR, 1, 1)))  # beginning of year
+```
+
+### 1) Data Review
+
+From [EDA](eda.html), we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we'll take the log to try to make it at least weakly stationary.
+
+**Log Transform energy production outputs - and plot**
+```{r}
+# Log transform
+energy_sources$log_Output <- log(energy_sources$Output)
+
+coal <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Coal")
+nuclear <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Nuclear")
+wind <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Wind")
+solar <- energy_sources %>%
+  filter(ENERGY.SOURCE == "Solar Thermal and Photovoltaic")
+
+ggplot(coal, aes(x = YEAR, y = log_Output, colour="Coal")) +
+  geom_line()+
+  geom_line(data = nuclear, aes(x=YEAR,y=log_Output, colour="Nuclear")) +
+  geom_line(data = wind, aes(x=YEAR,y=log_Output, colour="Wind")) +
+  geom_line(data = solar, aes(x=YEAR,y=log_Output, colour="Solar")) +
+  labs(
+    title = "US Production of Different Fuel Sources",
+    subtitle = "From 1990 - 2022",
+    x = "Date",
+    y = "Log(Megawatthours)")+
+    guides(colour=guide_legend(title="Energy Source"))
+
+# Create time series objects
+coal_ts <- ts(coal$Output, start = c(1990,1), frequency=1)
+nuclear_ts <- ts(nuclear$Output, start = c(1990,1), frequency=1)
+wind_ts <- ts(wind$Output, start = c(1990,1), frequency=1)
+solar_ts <- ts(solar$Output, start = c(1990,1), frequency=1)
+```
+**Check if data is now stationary using ACF plot**
+```{r}
+# Create time series object
+ets <- ts(data.frame(COAL=coal$log_Output, NUCLEAR=nuclear$log_Output, SOLAR=solar$log_Output, WIND=wind$log_Output), star=decimal_date(as.Date("1990-01-01")), frequency = 1)
+
+ggAcf(ets)
+```
+It's now weakly stationary! No further differencing necessary.
+
+### 2) ACF/PACF Plots
+
+ACF/PACF plots are used to select potential p and q values for an ARMA(p,q) model. ARMA is used because no differencing of the data occurred. From these plots, some potential p and q values are selected to fit an ARMA model with. Separate models have to be fit for each energy source, thus separate ACF/PACF plots are shown below.
+
+**Coal**
+```{r}
+require(gridExtra)
+coal1 <- ggAcf(coal_ts)
+coal2 <- ggPacf(coal_ts)
+grid.arrange(coal1, coal2, ncol=2)
+```
+
+Moving average order (found from ACF): q - 1,2,3,4 <br>
+Autoregressive term (found from pACF): p - 1
+
+**Nuclear**
+```{r}
+require(gridExtra)
+n1 <- ggAcf(nuclear_ts)
+n2 <- ggPacf(nuclear_ts)
+grid.arrange(n1, n2, ncol=2)
+```
+Moving average order (found from ACF): q - 1,2,3,4,5 <br>
+Autoregressive term (found from pACF): p - 1
+
+**Wind**
+```{r}
+require(gridExtra)
+w1 <- ggAcf(wind_ts)
+w2 <- ggPacf(wind_ts)
+grid.arrange(w1, w2, ncol=2)
+```
+Moving average order (found from ACF): q - 1,2,3,4,5<br>
+Autoregressive term (found from pACF): p - 1
+
+**Solar**
+```{r}
+require(gridExtra)
+s1 <- ggAcf(solar_ts)
+s2 <- ggPacf(solar_ts)
+grid.arrange(s1, s2, ncol=2)
+```
+Moving average order (found from ACF): q - 1,2,3 <br>
+Autoregressive term (found from pACF): p - 1
+
+### 3) Fit ARIMA(p,d,q) models
+
+**Coal**
+
+```{r}
+######################## Check for different combinations ########
+d=0
+p=1
+i=1
+temp= data.frame()
+ls=matrix(rep(NA,4*3),nrow=4)
+
+
+for(q in c(2,3,4,5))# q=1:4
+{
+      
+      model<- tseries::arma(coal_ts, order=c(p,q-1))
+      extract <- summary(model)
+      ls[i,]= c(p,q-1,extract$aic)
+      i=i+1
+}
+
+
+temp= as.data.frame(ls)
+names(temp)= c("p","q","AIC")
+
+#temp
+knitr::kable(temp)
+```
+
+**Nuclear**
+```{r}
+######################## Check for different combinations ########
+d=0
+p=1
+i=1
+temp= data.frame()
+ls=matrix(rep(NA,5*3),nrow=5)
+
+
+
+for(q in c(2,3,4,5,6))# q=1:4
+{
+      
+      model<- tseries::arma(nuclear_ts, order=c(p,q-1))
+      extract <- summary(model)
+      ls[i,]= c(p,q-1,extract$aic)
+      i=i+1
+}
+
+
+temp= as.data.frame(ls)
+names(temp)= c("p","q","AIC")
+
+#temp
+knitr::kable(temp)
+```
+
+**Wind**
+```{r}
+######################## Check for different combinations ########
+d=0
+p=1
+i=1
+temp= data.frame()
+ls=matrix(rep(NA,5*3),nrow=5)
+
+
+
+for(q in c(2,3,4,5,6))# q=1:4
+{
+      
+      model<- tseries::arma(wind_ts, order=c(p,q-1))
+      extract <- summary(model)
+      ls[i,]= c(p,q-1,extract$aic)
+      i=i+1
+}
+
+
+temp= as.data.frame(ls)
+names(temp)= c("p","q","AIC")
+
+#temp
+knitr::kable(temp)
+```
+
+**Solar**
+```{r}
+######################## Check for different combinations ########
+d=0
+p=1
+i=1
+temp= data.frame()
+ls=matrix(rep(NA,3*3),nrow=3)
+
+
+
+for(q in c(2,3,4))# q=1:4
+{
+      
+      model<- tseries::arma(solar_ts, order=c(p,q-1))
+      extract <- summary(model)
+      ls[i,]= c(p,q-1,extract$aic)
+      i=i+1
+}
+
+
+temp= as.data.frame(ls)
+names(temp)= c("p","q","AIC")
+
+#temp
+knitr::kable(temp)
+```
+
+### 4) Model Diagnostics
+
+With the above exploration, a best fit model is chosen for each energy source by minimizing AIC.
+
+**Coal**
+
+The ARMA(p,q) model that minimizes AIC is ARMA(1,3).
+```{r}
+fit1=arma(coal_ts, order=c(1,3))
+
+plot(coal_ts, col="blue")
+lines(fitted(fit1),col="green")
+legend(x = "topleft", legend = c("xt", "ARMA(1,3)"), fill = 4:1)
+
+summary(fit1)
+```
+ARMA(1,3) for coal produces an AIC value of 1312.11 and a CSS value of 7.7x10^17. Using the model summary and plot of the model against the data above, it seems that the model fits the data pretty well but not perfectly. The randomness and sensitivity of the original data makes it hard for the model to truly fit well without overfitting. To achieve a better fit would require overfitting the training data and wouldn't generalize well to new data. 
+
+$$
+\phi(B) = 1 - 1.07(B)
+$$
+$$
+\theta(B) = 1 + 3.29*10^-1 *(B) + 3.552*10^-2*(B^2) - 5.782*10^-1*(B^3)
+$$
+
+**Nuclear**
+
+The ARMA(p,q) model that minimizes AIC is ARMA(1,2).
+
+```{r}
+fit2=arma(nuclear_ts, order=c(1,2))
+
+plot(nuclear_ts, col="blue")
+lines(fitted(fit2),col="green")
+legend(x = "topleft", legend = c("xt", "ARMA(1,2)"), fill = 4:1)
+
+summary(fit2)
+```
+ARMA(1,2) for nuclear produces an AIC value of 1212.39 and a CSS value of 3.76x10^16. It seems that the model fits the data pretty well but not perfectly. To achieve a better fit would require overfitting the training data and wouldn't generalize well to new data. 
+
+$$
+\phi(B) = 1 - 8.976*10^-1(B)
+$$
+$$
+\theta(B) = 1 - 5.65*10^-2 *(B) + 3.256*10^-1*(B^2)
+$$
+
+**Wind**
+
+The ARMA(p,q) model that minimizes AIC is ARMA(1,1).
+
+```{r}
+fit3=arma(wind_ts, order=c(1,1))
+
+plot(wind_ts, col="blue")
+lines(fitted(fit3),col="green")
+legend(x = "topleft", legend = c("xt", "ARMA(1,1)"), fill = 4:1)
+
+summary(fit3)
+```
+ARMA(1,1) for wind produces an AIC value of 1144.57 and a CSS value of 4.97x10^15. The model fits this data much better than the previous data as it follows a steadier upward trend over time as wind production has been more widely adopted by US states. Additionally, wind power is less prone to political shocks so is easier to predict and fit.
+
+$$
+\phi(B) = 1 - 1.05(B)
+$$
+$$
+\theta(B) = 1 + 4.62*10^-1 *(B)
+$$
+
+**Solar**
+
+The ARMA(p,q) model that minimizes AIC is ARMA(1,2).
+
+```{r, warning=FALSE}
+fit4=arma(solar_ts, order=c(1,2))
+
+plot(solar_ts, col="blue")
+lines(fitted(fit4),col="green")
+legend(x = "topleft", legend = c("xt", "ARMA(1,2)"), fill = 4:1)
+
+summary(fit4)
+```
+Simiarly, ARMA(1,2) for solar produces an AIC value of 1,063.94 and a CSS value of 3.82x10^9. The model fits this data much better than the previous data as it follows a steadier upward trend over time as solar production has been more widely adopted by US states. Additionally, solar power is less prone to political shocks so is easier to predict and fit.
+
+$$
+\phi(B) = 1 - 1.268(B)
+$$
+$$
+\theta(B) = 1 - 1.018(B) + 2.671*10^-1*(B^2)
+$$
+
+### 5) Fit an ARMA(p,q) model using auto.arima()
+
+**Coal**
+```{r}
+auto.arima(coal_ts)
+```
+Auto.arima() chooses AR(2,2) as the best model, very different from my chosen model of AR(1,3). This is likely because auto.arima() considers a more comprehensive set of parameters (i.e. I didn't check p=2 as a possible value) and I chose my model based on AIC alone whereas auto.arima() chooses models based on AIC, BIC, and AICc.
+
+**Nuclear**
+```{r}
+auto.arima(nuclear_ts)
+```
+The model chosen here is (0,1,0) which is bizarre. This only applies differencing, but doesn't use AutoRegressive modeling or Moving Average modeling. This is likely because the data is hard to fit.
+
+**Wind**
+```{r}
+auto.arima(wind_ts)
+```
+The model chosen is ARIMA(0,2,1), which is essentially an MA() model with differencing. The search algorithm decided to difference twice, where I didn't because I already saw weak stationarity in initial exploration.
+
+**Solar**
+```{r}
+auto.arima(solar_ts)
+```
+The model chosen is ARIMA(0,2,1), which is essentially an MA() model with differencing. The search algorithm decided to difference twice, where I didn't because I already saw weak stationarity in initial exploration.
+
+### 6) Forecast
+
+Forecast each energy source for the next three years - using manually selected models, but including 2 orders of differencing for each.
+
+**Coal**
+```{r}
+ARC <- arima(coal_ts, order = c(1,2,3))
+ARC %>% forecast(h=3) %>% autoplot()
+```
+Forecasting coal production three years into the future, it's expected to continue declining along the lines of its current downward trend. There's quite a large confidence band around this estimate, as many other factors will affect coal production - such as the geopolitical climate surrounding coal.
+
+**Nuclear**
+```{r}
+ARN <- arima(nuclear_ts, order = c(1,2,2))
+ARN %>% forecast(h=3) %>% autoplot()
+```
+
+Forecasting nuclear production three years into the future, it's expected to stay fairly steady along the 1.5x10^9 tons line. There's quite a large confidence band around this estimate, as many other factors will affect wind production - especially political sentiment around its usage.
+
+**Wind**
+```{r}
+ARW <- arima(wind_ts, order = c(1,2,1))
+ARW %>% forecast(h=3) %>% autoplot()
+```
+Forecasting wind production three years into the future, it's expected to continually exponentially growing as per its existing trend. There's a much smaller confidence band around this esimate, as its seen a steady increase over this timeframe. Infrastructure improvements in the space will affect the estimate greatly.
+
+**Solar**
+````{r}
+ARS <- arima(solar_ts, order = c(1,2,2))
+ARS %>% forecast(h=3) %>% autoplot()
+```
+Forecasting solar production three years into the future, it's expected to continually exponentially growing as per its existing trend. There's a much smaller confidence band around this esimate, as its seen a steady increase over this timeframe. Infrastructure improvements in the space will affect the estimate greatly.
+
+### 7) Benchmark Methods
+
+Compare the models to baseline benchmark methods to ensure they're performing above.
+
+**Coal**
+```{r}
+autoplot(coal_ts) +
+  autolayer(meanf(coal_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(coal_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(coal_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(coal_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(ARC, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+**Nuclear**
+```{r}
+autoplot(nuclear_ts) +
+  autolayer(meanf(nuclear_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(nuclear_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(nuclear_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(nuclear_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(ARN, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+**Wind**
+```{r}
+autoplot(wind_ts) +
+  autolayer(meanf(wind_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(wind_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(wind_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(wind_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(ARW, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+**Solar**
+```{r}
+autoplot(solar_ts) +
+  autolayer(meanf(solar_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(solar_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(solar_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(solar_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(ARS, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+**Note:** Across all four energy sources, the fitted model does perform better than benchmark methods.
+
+## Dataset 2 - Petroleum Exports vs. Imports
+
+
+```{r, warning=FALSE}
+petroleum <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/petroleum_clean.csv")
+
+petroleum <- petroleum %>%
+  filter(Value != "Not Available") %>%
+  mutate(Value = as.double(Value)) %>%
+  filter(Description == c("Petroleum Exports", "Petroleum Imports", "Total Petroleum Field Production"))
+
+# Fix year for imports
+index <- petroleum$Description == "Petroleum Imports"
+petroleum$year[index] <- (petroleum$year[index] + 1)
+
+# Drop extra imports
+petroleum <- petroleum %>%
+  filter(year != 2022)
+```
+
+### 1) Data Review
+
+From [EDA](eda.html), we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we take the log and difference to make it stationary.
+
+**Log Transform petroleum imports, exports, and production - and plot**
+```{r}
+# Log transform
+petroleum$log_Value <- log(petroleum$Value)
+
+import <- filter(petroleum, Description=="Petroleum Imports")
+export <- filter(petroleum, Description=="Petroleum Exports")
+production <- filter(petroleum, Description=="Total Petroleum Field Production")
+
+ggplot(import, aes(x = year, y = log_Value, colour="Imports")) +
+  geom_line()+
+  geom_line(data = export, aes(x=year,y=log_Value, colour="Exports")) +
+  geom_line(data = production, aes(x=year,y=log_Value, colour="Production")) +
+  labs(
+    title = "Log - United States Petroleum Imports vs. Exports",
+    subtitle = "From 1950 - 2020",
+    x = "Year",
+    y = "Log(Thousands of Barrels/Day)")+
+    guides(colour=guide_legend(title="Description")) 
+
+# Create time series objects
+import_ts <- ts(filter(petroleum, Description=="Petroleum Imports")$log_Value, start = c(1950,1), frequency=1)
+export_ts <- ts(filter(petroleum, Description=="Petroleum Exports")$log_Value, start = c(1950,1), frequency=1)
+production_ts <- ts(filter(petroleum, Description=="Total Petroleum Field Production")$log_Value, start = c(1950,1), frequency=1)
+```
+
+Since the data is still not stationary, exports, imports, and production will be differenced.
+
+**Imports**
+```{r}
+import_ts %>% diff() %>% ggtsdisplay(main="First Difference")
+tseries::adf.test(import_ts%>%diff())
+```
+
+**Exports**
+
+Must be differenced twice. A first difference results in a p-value of 0.32 by the ADF test: indicating that we can't reject the null hypothesis of no stationarity. Stationarity is only achieved with a second difference.
+
+```{r}
+export_ts %>% diff() %>% diff() %>% ggtsdisplay(main="Second Difference")
+tseries::adf.test(export_ts%>%diff()%>%diff())
+```
+
+**Production**
+Must be differenced twice. A first difference results in a p-value of 0.99 by the ADF test: indicating that we can't reject the null hypothesis of no stationarity. Stationarity is only achieved with a second difference.
+```{r}
+production_ts %>% diff() %>% diff() %>% ggtsdisplay(main="Second Difference")
+tseries::adf.test(production_ts%>%diff()%>%diff())
+```
+All three variables were differenced once or twice in order to achieve stationarity. The stationary property of the data is confirmed by the ACF plots of each, as well as the Augmented-Dickey-Fuller Test of the differenced series. 
+
+### 2) ACF/PACF Plots
+
+ACF/PACF plots are used to select potential p and q values for an ARIMA(p,d,q) model. From these plots, some potential p and q values are selected to fit an ARIMA model with. Separate models have to be fit for each variable thus separate ACF/PACF plots are shown below.
+
+**Import**
+```{r}
+require(gridExtra)
+import1 <- ggAcf(import_ts)
+import2 <- ggPacf(import_ts)
+grid.arrange(import1, import2, ncol=2)
+```
+
+Moving average order (found from ACF): q - 1,2,3 <br>
+Autoregressive term (found from pACF): p - 1
+
+**Exports**
+```{r}
+require(gridExtra)
+exports1 <- ggAcf(export_ts)
+exports2 <- ggPacf(export_ts)
+grid.arrange(exports1, exports2, ncol=2)
+```
+
+Moving average order (found from ACF): q - 1,2,3 <br>
+Autoregressive term (found from pACF): p - 1
+
+**Production**
+```{r}
+require(gridExtra)
+prod1 <- ggAcf(production_ts)
+prod2 <- ggPacf(production_ts)
+grid.arrange(prod1, prod2, ncol=2)
+```
+Moving average order (found from ACF): q - 1 <br>
+Autoregressive term (found from pACF): p - 1
+
+### 3) Fit ARIMA(p,d,q) models
+
+**Imports**
+```{r}
+######################## Check for different combinations ########
+i=1
+imp= data.frame()
+ls=matrix(rep(NA,6*9),nrow=9)
+
+
+for (p in c(2))# p=1
+{
+  for(q in c(2:4))# q=1,2,3
+  {
+    for(d in c(1:3)) # d=0,1,2
+    {
+      model<- Arima(import_ts,order=c(p-1,d,q-1)) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+    }
+  }
+}
+
+imp= as.data.frame(ls)
+names(imp)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(imp)
+```
+
+**Exports**
+```{r}
+######################## Check for different combinations ########
+i=1
+exp= data.frame()
+ls=matrix(rep(NA,6*9),nrow=9)
+
+
+for (p in c(2))# p=1
+{
+  for(q in c(2:4))# q=1,2,3
+  {
+    for(d in c(1:3)) # d=0,1,2
+    {
+      model<- Arima(export_ts,order=c(p-1,d,q-1)) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+    }
+  }
+}
+
+exp= as.data.frame(ls)
+names(exp)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(exp)
+```
+
+**Production**
+```{r}
+######################## Check for different combinations ########
+i=1
+prod= data.frame()
+ls=matrix(rep(NA,6*12),nrow=12)
+
+
+for (p in c(2,3))# p=1,2
+{
+  for(q in c(1,2))# q=0,1
+  {
+    for(d in c(1:3)) # d=0,1,2
+    {
+      model<- Arima(production_ts,order=c(p-1,d,q-1)) 
+      ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+      i=i+1
+    }
+  }
+}
+
+prod= as.data.frame(ls)
+names(prod)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(prod)
+```
+
+### 4) Model Diagnostics
+
+With the above exploration, a best fit model for each variable is chosen by minimizing AIC, AICc, and BIC
+
+**Imports**
+```{r, include=FALSE}
+imp[which.min(imp$AIC),] # 1,1,1
+imp[which.min(imp$BIC),] # 1,2,1
+imp[which.min(imp$AICc),] # 1,1,1
+```
+
+The ARIMA model that minimizes AIC and AICc is ARIMA(1,1,1)
+```{r}
+fit1 = arima(import_ts, order=c(1,1,1))
+
+plot(import_ts, col="blue")
+lines(fitted(fit1),col="green")
+legend(x = "topleft", legend = c("xt", "ARIMA(1,1,1)"), fill = 4:1)
+
+summary(fit1)
+```
+With this model, we get a training RMSE of 0.215, so the model fits the training data fairly well without overfitting due to its bizarre behavior.
+
+$$
+\phi(B) = 1 - 0.5586(B)
+$$
+$$
+\theta(B) = 1 - 0.4354(B)
+$$
+
+**Exports**
+```{r,include=FALSE}
+exp[which.min(exp$AIC),] # 1,1,2
+exp[which.min(exp$BIC),] # 1,1,2
+exp[which.min(exp$AICc),] # 1,1,2
+```
+
+The consensus across AIC, BIC, and AICc is that the best fit model is ARIMA(1,1,2).
+
+```{r}
+fit2 = arima(export_ts, order=c(1,1,2))
+
+plot(export_ts, col="blue")
+lines(fitted(fit1),col="green")
+legend(x = "topleft", legend = c("xt", "ARIMA(1,1,2)"), fill = 4:1)
+
+summary(fit2)
+```
+
+
+$$
+\phi(B) = 1 + 0.8486(B)
+$$
+$$
+\theta(B) = 1 - 1.7101(B) - 0.9117(B^2)
+$$
+With this model, we get a training RMSE of 0.2273. As evidenced by the plot, the model does a pretty terrible job with this model fit - likely due to the complex adn random nature of the data. Let's see what auto.arima() would have chosen for this model.
+
+**Production**
+
+```{r,include=FALSE}
+prod[which.min(prod$AIC),] #1,1,0 for all
+prod[which.min(prod$BIC),] 
+prod[which.min(prod$AICc),]
+```
+
+The consensus across AIC, BIC, and AICc is that the best fit model is ARIMA(1,1,0).
+
+```{r}
+fit3 = arima(production_ts, order=c(1,1,0))
+
+plot(production_ts, col="blue")
+lines(fitted(fit3),col="green")
+legend(x = "topleft", legend = c("xt", "ARIMA(1,1,0)"), fill = 4:1)
+
+summary(fit3)
+```
+
+$$
+\phi(B) = 1 - 0.8427(B)
+$$
+
+With this model, we get a training RMSE of 0.08398331, so the model fits the training data fairly well without overfitting due to its bizarre behavior.
+
+### 5) Fit an ARIMA(p,d,q) model using auto.arima()
+
+**Imports**
+```{r}
+auto.arima(import_ts)
+```
+The model chosen is ARIMA(0,1,0) with drift. While auto.arima() agrees with my choice of differencing, it chose different parameters for p and q, and experimented with drift whereas I did not.
+
+**Exports**
+```{r}
+auto.arima(export_ts)
+```
+The model chosen is ARIMA(0,1,1) with drift. This is slightly different than my choice, likely because auto.arima() experimented with a wider range of parameters and experimented with drift. 
+
+**Production**
+```{r}
+auto.arima(production_ts)
+```
+The model chosen is ARIMA(2,0,0) with non-zero mean - or an AR(2) model. AR is more suitable when the data has a clear pattern of autoregression and less randomness. This potentially makes sense given the lack of seasonality and large overall upward trend in production since 1970.
+
+### 6) Forecast
+
+Forecasting petroleum imports, exports, and production for the next three years.
+
+```{r}
+require(gridExtra)
+f1 <- fit1%>%forecast(h=3)%>%autoplot()
+f2 <- fit2%>%forecast(h=3)%>%autoplot()
+f3 <- fit3%>%forecast(h=3)%>%autoplot()
+grid.arrange(f1,f2,f3, ncol=3)
+```
+All three forecasts have a wide confidence band - indicating that based on past data alone we cannot generate a good estimate with high confidence. Imports are expected to increase slightly in the next 3 years, but have mostly stabilized. Exports are expected to increase for a year and then plateau/decrease for the next two years. Production is expected to continue exponentially increasing during the next three years.
+
+### 7) Benchmark
+```{r}
+require(gridExtra)
+
+p1 <- autoplot(import_ts) +
+  autolayer(meanf(import_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(import_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(import_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(import_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit1, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+
+p2 <- autoplot(export_ts) +
+  autolayer(meanf(export_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(export_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(export_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(export_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit2, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+
+p3 <- autoplot(production_ts) +
+  autolayer(meanf(production_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(production_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(production_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(production_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit3, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+
+grid.arrange(p1,p2,p3,ncol=3)
+```
+
+The models perform better than most of the models, expect the drift model. It's clear that the models would benefit from incorporating a drift term to account for the intense drift especially production and exports suffer from. 
+
+## Dataset 3 - Cost of Energy
+
+```{r}
+# Load in data
+cost <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/Price_Clean.csv", skip=2)
+```
+
+### 1) Data Review
+
+From [EDA](eda.html), we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we take the log and difference to make it stationary.
+
+**Log Transform - and plot**
+```{r}
+# Log transform
+cost$log_Total <- log(cost$Total)
+
+ggplot(cost, aes(x = Year, y = log_Total, colour="Log Total Energy Cost")) +
+  geom_line()+
+  labs(
+    title = "Log of Total Cost of Electricity in the US 1970 - 2010",
+    x = "Year",
+    y = "Log(Dollars per Million Btu)"
+  ) +
+  theme_minimal()
+
+# Create time series objects
+cost_ts <- ts(cost$log_Total, start = c(1970,1), frequency=1)
+```
+Taking the log of the data barely changed it! We'll have to difference it. According to the ADF test, the data requires 2 differences. We can experiment with this during model building.
+```{r}
+cost_ts %>% diff() %>% ggtsdisplay(main="First Difference")
+tseries::adf.test(cost_ts%>%diff())
+```
+
+### 2) ACF/PACF Plots
+
+ACF/PACF plots are used to select potential p and q values for an ARIMA(p,d,q) model. From these plots, some potential p and q values are selected to fit an ARIMA model with. Separate models have to be fit for each variable thus separate ACF/PACF plots are shown below.
+
+**Import**
+```{r}
+require(gridExtra)
+cost1 <- ggAcf(cost_ts)
+cost2 <- ggPacf(cost_ts)
+grid.arrange(cost1, cost2, ncol=2)
+```
+Moving average order (found from ACF): q - 1,2,3,4,5 <br>
+Autoregressive term (found from pACF): p - 0,1
+
+### 3) Fit ARIMA(p,d,q) models
+```{r}
+######################## Check for different combinations ########
+i=1
+imp= data.frame()
+ls=matrix(rep(NA,6*20),nrow=20)
+
+
+for (p in c(1,2))# p=0,1
+{
+  for(q in c(2:6))# q=1,2,3,4,5
+  {
+    for(d in c(2:3)) # d=1,2
+    {
+      model<- Arima(cost_ts,order=c(p-1,d,q-1)) 
+        ls[i,]= c(p-1,d,q-1,model$aic,model$bic,model$aicc)
+        i=i+1
+    }
+  }
+}
+
+imp= as.data.frame(ls)
+names(imp)= c("p","d","q","AIC","BIC","AICc")
+
+#temp
+knitr::kable(imp)
+```
+
+### 4) Model Diagnostics
+
+With the above exploration, a best fit model for each variable is chosen by minimizing AIC, AICc, and BIC
+
+```{r, include=FALSE}
+imp[which.min(imp$AIC),] # 0,2,1
+imp[which.min(imp$BIC),] # 0,2,1
+imp[which.min(imp$AICc),] # 0,2,1
+```
+
+The ARIMA model that minimizes AIC, BIC, and AICc is ARIMA(0,2,1)
+```{r}
+fit1 = arima(cost_ts, order=c(0,2,1))
+
+plot(cost_ts, col="blue")
+lines(fitted(fit1),col="green")
+legend(x = "topleft", legend = c("xt", "ARIMA(0,2,1)"), fill = 4:1)
+
+summary(fit1)
+```
+
+With this model, we get a training RMSE of 0.243, so the model fits the training data fairly well without overfitting. The random bumps and dips in the data have been largely smoothed, while the trend line is maintained.
+
+$$
+\theta(B) = 1 + 0.8616(B)
+$$
+
+### 5) Fit an ARIMA(p,d,q) model using auto.arima()
+```{r}
+auto.arima(cost_ts)
+```
+The model chosen by auto.arima() is ARIMA(0,1,0) with drift. This is similar to the model parameters that I manually chose - except that auto.arima() chose to perform a second difference of the data and didn't see the need for a moving average term. 
+
+### 6) Forecast
+Forecasting electricity costs for the next three years.
+
+```{r}
+fit1%>%forecast(3) %>% autoplot()
+```
+According to our model, electricity costs are going to continue to rise over the next three years. Though there is ia decently large confidence band around the estimate, it is predicted that the slight dip in electricity costs during the Great Recession in 2008 were short lived and the market is going to recover. Since this data is old, I can confirm that electricity costs have continued to rise since the dataset stopped collecting data and the model forecast was correct.
+
+### 7) Benchmark
+```{r}
+autoplot(cost_ts) +
+  autolayer(meanf(cost_ts, h=3),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(cost_ts, h=3),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(cost_ts, h=3),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(cost_ts, h=3, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit1, 3),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+The model performs better than all the benchmark methods - except drift which performs about the same as the model. Again, this model could be improved by including a drift term and then should outperform even the drift benchmark.
+
+## Dataset 4 - CO2 Emissions
+
+```{r}
+# Load in data
+co2 <- read.csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/CO2.csv")
+# Unit is Million Metric Tons of Carbon Dioxide
+
+# Clean data
+co2 <- co2 %>%
+  select(-c("MSN", "Column_Order", "Unit")) %>%
+  mutate(YYYYMM = as.Date(paste0(as.character(YYYYMM), '01'), format='%Y%m%d'))
+
+co2 <- na.omit(co2) # Remove NAs
+
+# Look just at Coal, Hydrocarbon, Natural Gas, Petroleum
+coal=co2 %>%
+  filter(Description=="Coal, Including Coal Coke Net Imports, CO2 Emissions")
+hydro=co2 %>%
+  filter(Description=="Hydrocarbon Gas Liquids CO2 Emissions")
+natgas=co2 %>%
+  filter(Description=="Natural Gas, Excluding Supplemental Gaseous Fuels, CO2 Emissions")
+petro=co2 %>%
+  filter(Description=="Petroleum Coke CO2 Emissions")
+total = co2%>%
+  filter(Description == "Total Energy CO2 Emissions")
+```
+
+### 1) Data Review
+
+From [EDA](eda.html), we looked at ACF graphs and checked ADF to see if the data was stationary. The data was not stationary so we take the log and difference to make it stationary.
+
+**Log Transform coal, natural gas, petro, and hydrocarbon gas - and plot**
+```{r, warning=FALSE}
+# Log transform
+coal$log_value = log(coal$Value)
+hydro$log_value = log(hydro$Value)
+natgas$log_value = log(natgas$Value)
+petro$log_value = log(petro$Value)
+
+ggplot(coal, aes(x = YYYYMM, y = log_value, colour="Coal")) +
+  geom_line()+
+  geom_line(data = hydro, aes(x = YYYYMM, y = log_value, colour="Hydrocarbon")) +
+  geom_line(data = natgas, aes(x = YYYYMM, y = log_value, colour="Natural Gass")) +
+  geom_line(data=petro, aes(x = YYYYMM, y = log_value, colour="Petroleum")) +
+  labs(
+    title = "Log - United States CO2 Emissions From Various Sources",
+    subtitle = "From 1973 - 2022",
+    x = "Year",
+    y = "Log(Million Metric Tons of Carbon Dioxide)")+
+    guides(colour=guide_legend(title="Fuel Sources")) 
+
+# Create time series objects
+coal_ts <- ts(coal$log_value, start = c(1973,1), frequency=12)
+hydro_ts <- ts(hydro$log_value, start = c(1973,1), frequency=12)
+petro_ts <- ts(petro$log_value, start = c(1973,1), frequency=12)
+natural_ts <- ts(natgas$log_value, start = c(1973,1), frequency=12)
+```
+
+Taking the log of the data changed it significantly! An ADF test reveals the data is almost stationary. According to the ADF test, coal and petroleum require another differencing, while hydro and natural gas are already stationary. We can experiment with this during model building.
+```{r, warning=FALSE}
+#cost_ts %>% diff() %>% ggtsdisplay(main="First Difference")
+tseries::adf.test(coal_ts%>%diff())
+tseries::adf.test(hydro_ts)
+tseries::adf.test(natural_ts)
+tseries::adf.test(petro_ts%>%diff())
+```
+
+### 2) ACF/PACF Plots
+
+ACF/PACF plots are used to select potential p and q values for a SARIMA(p,d,q)(P,D,Q) model. SARIMA is used because the data contains seasonal components and had differencing. From these plots, some potential p,q,P,Q values are selected to fit a SARIMA model with. Separate models have to be fit for each energy source, thus separate ACF/PACF plots are shown below.
+
+**Coal**
+```{r}
+coal_ts %>% diff(12) %>% diff() %>% ggtsdisplay()
+```
+
+Differencing: d = 0,1; D = 0,1 <br>
+Moving average order: q = 0,1; Q = 0,1,2,3 <br>
+Autoregressive terms: p = 0,1, P = 0,1 <br>
+
+**Hydrocarbon**
+```{r}
+hydro_ts %>% diff() %>% diff(12) %>% ggtsdisplay()
+```
+
+Differencing: d = 0,1; D = 0,1 <br>
+Moving average order: q = 0,1,2,3,4; Q = 0,1,2,3 <br>
+Autoregressive terms: p = 0,1, P = 0,1,2 <br>
+
+**Natural Gas**
+```{r}
+natural_ts %>% diff() %>% diff(12) %>% ggtsdisplay()
+```
+
+Differencing: d = 0,1; D = 0,1 <br>
+Moving average order (ACF): q = 0,1,2; Q = 0,1,2 <br>
+Autoregressive terms (PACF): p = 0,1,2,3; P = 0,1,2,3 <br>
+
+**Petroleum**
+```{r}
+petro_ts %>% diff() %>% diff(12) %>% ggtsdisplay()
+```
+
+Differencing: d = 0,1; D = 0,1 <br>
+Moving average order: q = 0,1; Q = 0,1 <br>
+Autoregressive terms: p = 0,1,2,3,4; P = 0,1,2 <br>
+
+### 3) Fit SARIMA models and Model Diagnostics
+**Coal**
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+d = 1
+D = 1
+s=12
+temp = data.frame(matrix(ncol = 9, nrow = 0))
+colnames(temp) <- c("p","d","q","P","D","Q","AIC","BIC","AICc")
+
+for (p in c(1:2))# p=0,1
+{
+  for(q in c(1:2))# q=0,1
+  {
+    for(Q in c(1:3)) # Q = 0,1,2,3
+    {
+      for(P in c(1:2)) # P = 0,1
+      {
+        if(p+q+P+Q<9)
+        {
+           model = Arima(coal_ts,order=c(p-1,d,q-1),seasonal=c(P-1,D,Q-1))
+          temp <- temp %>% add_row(p=p-1,d=d,q=q-1,P=P-1,D=D,Q=Q-1,AIC=model$aic,BIC=model$bic,AICc=model$aicc)
+        }
+      }
+    }
+  }
+}
+
+knitr::kable(temp)
+```
+
+**Hydrocarbon**
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+d = 1
+D = 1
+s=12
+temp1 = data.frame(matrix(ncol = 9, nrow = 0))
+colnames(temp1) <- c("p","d","q","P","D","Q","AIC","BIC","AICc")
+
+for (p in c(1:2))# p=0,1
+{
+  for(q in c(1:5))# q=0,1,2,3,4
+  {
+    for(Q in c(1:4)) # Q = 0,1,2,3
+    {
+      for(P in c(1:3)) # P = 0,1,2
+      {
+        if(p+q+P+Q<9)
+        {
+           model = Arima(hydro_ts,order=c(p-1,d,q-1),seasonal=c(P-1,D,Q-1))
+          temp1 <- temp1 %>% add_row(p=p-1,d=d,q=q-1,P=P-1,D=D,Q=Q-1,AIC=model$aic,BIC=model$bic,AICc=model$aicc)
+        }
+      }
+    }
+  }
+}
+
+knitr::kable(temp1)
+```
+
+**Natural Gas**
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+d = 1
+D = 1
+s=12
+temp3 = data.frame(matrix(ncol = 9, nrow = 0))
+colnames(temp3) <- c("p","d","q","P","D","Q","AIC","BIC","AICc")
+
+for (p in c(1:4))# p=0,1,2,3
+{
+  for(q in c(1:3))# q=0,1,2
+  {
+    for(Q in c(1:3)) # Q = 0,1,2
+    {
+      for(P in c(1:4)) # P = 0,1,2,3
+      {
+        if(p+q+P+Q<9)
+        {
+           model = Arima(natural_ts,order=c(p-1,d,q-1),seasonal=c(P-1,D,Q-1))
+           temp3 <- temp3 %>% add_row(p=p-1,d=d,q=q-1,P=P-1,D=D,Q=Q-1,AIC=model$aic,BIC=model$bic,AICc=model$aicc)
+        }
+      }
+    }
+  }
+}
+
+knitr::kable(temp3)
+```
+
+**Petroleum**
+```{r, warning=FALSE}
+######################## Check for different combinations ########
+d = 1
+D = 1
+s=12
+temp4 = data.frame(matrix(ncol = 9, nrow = 0))
+colnames(temp4) <- c("p","d","q","P","D","Q","AIC","BIC","AICc")
+
+for (p in c(1:5))# p=0,1,2,3,4
+{
+  for(q in c(1:2))# q=0,1
+  {
+    for(Q in c(1:2)) # Q = 0,1
+    {
+      for(P in c(1:3)) # P = 0,1,2
+      {
+        if(p+q+P+Q<9)
+        {
+           model = Arima(petro_ts,order=c(p-1,d,q-1),seasonal=c(P-1,D,Q-1))
+          temp4 <- temp4 %>% add_row(p=p-1,d=d,q=q-1,P=P-1,D=D,Q=Q-1,AIC=model$aic,BIC=model$bic,AICc=model$aicc)
+        }
+      }
+    }
+  }
+}
+
+knitr::kable(temp4)
+```
+
+### 4) Model Diagnostics
+
+With the above exploration, a best fit model is chosen for each energy source by minimizing AIC.
+
+**Coal**
+
+```{r, include=FALSE}
+temp[which.min(temp$AIC),] # 1,1,1; 0,1,2
+temp[which.min(temp$BIC),] # 1,1,1; 0,1,1
+temp[which.min(temp$AICc),] # 1,1,1,0,1,2
+```
+
+The SARIMA model that minimizes AIC and AICc is SARIMA(1,1,1)(0,1,2)
+```{r}
+fit1 = Arima(coal_ts,order=c(1,1,1),seasonal=c(0,1,2))
+
+plot(coal_ts, col="blue")
+lines(fitted(fit1),col="green")
+legend(x = "topleft", legend = c("xt", "SARIMA(1,1,1)(0,1,2)"), fill = 4:1)
+
+summary(fit1)
+```
+
+**Hydrocarbon**
+
+```{r, include=FALSE}
+temp1[which.min(temp1$AIC),] # 1,1,2,0,1,1
+temp1[which.min(temp1$BIC),] # 1,1,1,0,1,1
+temp1[which.min(temp1$AICc),] # 1,1,2,0,1,1
+```
+
+The SARIMA model that minimizes AIC and AICc is SARIMA(1,1,2)(0,1,1)
+```{r}
+fit2 = Arima(hydro_ts,order=c(1,1,2),seasonal=c(0,1,1))
+
+plot(hydro_ts, col="blue")
+lines(fitted(fit2),col="green")
+legend(x = "topleft", legend = c("xt", "SARIMA(1,1,2)(0,1,1"), fill = 4:1)
+
+summary(fit2)
+```
+
+**Natural Gas**
+
+```{r, include=FALSE}
+temp3[which.min(temp3$AIC),] # 1,1,1; 0,1,2
+temp3[which.min(temp3$BIC),] # 1,1,1; 0,1,1
+temp3[which.min(temp3$AICc),] # 1,1,1,0,1,2
+```
+
+The SARIMA model that minimizes AIC and AICc is SARIMA(1,1,1)(0,1,2)
+```{r}
+fit3 = Arima(natural_ts,order=c(1,1,1),seasonal=c(0,1,2))
+
+plot(natural_ts, col="blue")
+lines(fitted(fit3),col="green")
+legend(x = "topleft", legend = c("xt", "SARIMA(1,1,1)(0,1,2)"), fill = 4:1)
+
+summary(fit3)
+```
+
+**Petroleum**
+
+```{r, include=FALSE}
+temp4[which.min(temp4$AIC),] # 0,1,1,1,1,1
+temp4[which.min(temp4$BIC),] # 0,1,1,1,1,1
+temp4[which.min(temp4$AICc),] # 0,1,1,1,1,1
+```
+
+The SARIMA model that minimizes AIC, BIC, and AICc is SARIMA(0,1,1)(1,1,1)
+```{r}
+fit4 = Arima(petro_ts,order=c(0,1,1),seasonal=c(1,1,1))
+
+plot(petro_ts, col="blue")
+lines(fitted(fit4),col="green")
+legend(x = "topleft", legend = c("xt", "SARIMA(0,1,1)(1,1,1)"), fill = 4:1)
+
+summary(fit4)
+```
+
+
+### 5) Fit a SARIMA(p,d,q)(P,D,Q) model using auto.arima()
+
+**Coal**
+```{r}
+auto.arima(coal_ts)
+```
+The model chosen was ARIMA(1,1,1)(0,1,2) which is the same as I chose via manual fitting!
+
+**Hydrocarbon**
+```{r}
+auto.arima(hydro_ts)
+```
+The model chosen was ARIMA(2,0,1)(0,1,2) which is different from my chosen model of ARIMA(1,1,2)(0,1,1).
+
+**Natural Gas**
+```{r}
+auto.arima(natural_ts)
+```
+The model chosen was ARIMA(2,1,1)(1,1,1) which was different from my chosen model of ARIMA(1,1,1)(0,1,2).
+
+**Petroleum**
+```{r}
+auto.arima(petro_ts)
+```
+The model chosen was ARIMA(0,1,1)(0,0,2) which was slightly different from my chosen model of ARIMA(0,1,1)(1,1,1). The seasonal effects were handled differently by auto.arima()
+
+### 6) Forecast
+Forecasting CO2 Emissions by source for the next 5 years
+
+**Coal**
+```{r}
+fit1%>%forecast(60) %>% autoplot()
+```
+
+**Hydrocarbon**
+```{r}
+fit2%>%forecast(60) %>% autoplot()
+```
+
+**Natural Gas**
+```{r}
+fit3%>%forecast(60) %>% autoplot()
+```
+
+**Petroleum**
+```{r}
+fit4%>%forecast(60) %>% autoplot()
+```
+
+According to our models, coal emissions are expected to continue their steep downwards trend over the next 5 years, while CO2 Emissions from Petroleum are also expected to decrease over the next 5 years - albeit slightly less dramatically. CO2 emissions from both Hydrocarbon Gas and Natural Gas are forecasted to increase over the next 5 years.
+
+### 7) Benchmark
+
+Compare the models to baseline benchmark methods to ensure they're performing above.
+
+**Coal**
+```{r}
+autoplot(coal_ts) +
+  autolayer(meanf(coal_ts, h=60),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(coal_ts, h=60),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(coal_ts, h=60),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(coal_ts, h=60, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit1, 60),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+All benchmark methods predict CO2 emissions to stay steady or increase over the next 5 years. It looks like our model outperforms the benchmark methods.
+
+**Hydrocarbon**
+```{r}
+autoplot(hydro_ts) +
+  autolayer(meanf(hydro_ts, h=60),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(hydro_ts, h=60),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(hydro_ts, h=60),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(hydro_ts, h=60, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit2, 60),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+Both fit and seasonal naive methods predict an upward trend in CO2 emissions, with seasonal variation preserved. Drift, mean, and naive methods predict constant emissions and our model is far better.
+
+**Natural Gas**
+```{r}
+autoplot(natural_ts) +
+  autolayer(meanf(natural_ts, h=60),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(natural_ts, h=60),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(natural_ts, h=60),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(natural_ts, h=60, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit3, 60),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+Drift, Mean and Naive methods predict constant emissions over the next 5 years. Seasonal naive predicts increasing CO2 emissions with seasonal variation, but the fit outperforms seasonal naive and it follows the trend slightly better.
+
+**Petroleum**
+```{r}
+autoplot(petro_ts) +
+  autolayer(meanf(petro_ts, h=60),
+            series="Mean", PI=FALSE) +
+  autolayer(naive(petro_ts, h=60),
+            series="Naïve", PI=FALSE) +
+  autolayer(snaive(petro_ts, h=60),
+            series="SNaïve", PI=FALSE)+
+  autolayer(rwf(petro_ts, h=60, drift=TRUE),
+            series="Drift", PI=FALSE)+
+  autolayer(forecast(fit4, 60),
+            series="fit",PI=FALSE) +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+The fit and seasonal naive preserve the seasonal variation but the model fit forecasts decreasing CO2 emissions (following the trend) and seasonal naive predicts increasing seasonal variation. Drift, mean, and naive benchmark methods again severely underperform.
+
+### 8) Seasonal Cross Validation
+
+*1 Step Ahead*
+
+**Coal**
+ARIMA(1,1,1)(0,1,2) for both auto.arima() and manual fitting.
+
+```{r, error=TRUE}
+n=length(coal_ts)
+k=n*0.4
+x = (n-k)/4
+ 
+rmse1 <- matrix(NA,x,60)
+
+st <- tsp(coal_ts)[1]+(k-1)/4 
+
+for(i in 1:3)
+{
+  xtrain <- coal_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- coal_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(1,1,1), seasonal = c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast <- forecast(fit, h=60)
+  
+  rmse1[i,]  <- sqrt((fcast$mean-xtest)^2)
+}  
+
+colMeans(rmse1,na.rm=TRUE)
+```
+
+**Hydrocarbon**
+ARIMA(2,0,1)(0,1,2) for auto.arima() and  ARIMA(1,1,2)(0,1,1) from manual fitting.
+
+```{r, error=TRUE}
+n=length(hydro_ts)
+k=n*0.4
+x = (n-k)/4
+ 
+rmse1 <- matrix(NA,x,60)
+rmse2 <- matrix(NA,x,60)
+
+st <- tsp(hydro_ts)[1]+(k-1)/4 
+
+for(i in 1:3)
+{
+  xtrain <- hydro_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- hydro_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(2,0,1), seasonal = c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast <- forecast(fit, h=60)
+  
+  fit2 <- Arima(xtrain, order=c(1,1,2), seasonal = c(0,1,1),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=60)
+  
+  rmse1[i,]  <- sqrt((fcast$mean-xtest)^2)
+  rmse2[i,] <- sqrt((fcast2$mean-xtest)^2)
+}  
+
+colMeans(rmse1,na.rm=TRUE)
+colMeans(rmse2,na.rm=TRUE)
+
+plot(colMeans(rmse1,na.rm=TRUE), type="l", col=2, xlab="horizon", ylab="RMSE")
+lines(colMeans(rmse2,na.rm=TRUE), type="l",col=3)
+legend("topleft",legend=c("fit1","fit2"),col=2:4,lty=1)
+```
+From this, it appears that ARIMA(2,0,1)(0,1,2) has much more variable RMSE, but overall is a better fit model
+
+**Natural gas**
+ARIMA(2,1,1)(1,1,1) for auto.arima() and ARIMA(1,1,1)(0,1,2) from manual fitting.
+
+```{r, error=TRUE}
+n=length(natural_ts)
+k=n*0.4
+x = (n-k)/4
+ 
+rmse1 <- matrix(NA,x,60)
+rmse2 <- matrix(NA,x,60)
+
+st <- tsp(natural_ts)[1]+(k-1)/4 
+
+for(i in 1:3)
+{
+  xtrain <- natural_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- natural_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(2,1,1), seasonal = c(1,1,1),
+                include.drift=TRUE, method="ML")
+  fcast <- forecast(fit, h=60)
+  
+  fit2 <- Arima(xtrain, order=c(1,1,1), seasonal = c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=60)
+  
+  rmse1[i,]  <- sqrt((fcast$mean-xtest)^2)
+  rmse2[i,] <- sqrt((fcast2$mean-xtest)^2)
+}  
+
+colMeans(rmse1,na.rm=TRUE)
+colMeans(rmse2,na.rm=TRUE)
+
+plot(colMeans(rmse1,na.rm=TRUE), type="l", col=2, xlab="horizon", ylab="RMSE")
+lines(colMeans(rmse2,na.rm=TRUE), type="l",col=3)
+legend("topleft",legend=c("fit1","fit2"),col=2:4,lty=1)
+```
+From this analysis, it looks like ARIMA(2,1,1)(1,1,1) is a better fit model.
+
+**Petroleum**
+ARIMA(0,1,1)(0,0,2) for auto.arima() and ARIMA(0,1,1)(1,1,1) from manual fitting.
+
+```{r, error=TRUE}
+n=length(petro_ts)
+k=n*0.4
+x = (n-k)/4
+ 
+rmse1 <- matrix(NA,x,60)
+rmse2 <- matrix(NA,x,60)
+
+st <- tsp(petro_ts)[1]+(k-1)/4 
+
+for(i in 1:3)
+{
+  xtrain <- petro_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- petro_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(0,1,1), seasonal = c(0,0,2),
+                include.drift=TRUE, method="ML")
+  fcast <- forecast(fit, h=60)
+  
+  fit2 <- Arima(xtrain, order=c(0,1,1), seasonal = c(1,1,1),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=60)
+  
+  rmse1[i,]  <- sqrt((fcast$mean-xtest)^2)
+  rmse2[i,] <- sqrt((fcast2$mean-xtest)^2)
+}  
+
+colMeans(rmse1,na.rm=TRUE)
+colMeans(rmse2,na.rm=TRUE)
+
+plot(colMeans(rmse1,na.rm=TRUE), type="l", col=2, xlab="horizon", ylab="RMSE")
+lines(colMeans(rmse2,na.rm=TRUE), type="l",col=3)
+legend("topleft",legend=c("fit1","fit2"),col=2:4,lty=1)
+```
+
+From this analysis, it looks like both models perform similarly and have the same RMSE.
+
+
+**12 steps ahead forecast**
+
+**Coal**
+ARIMA(1,1,1)(0,1,2) for both auto.arima() and manual fitting.
+
+```{r, error=TRUE}
+k <- 75 # minimum data length for fitting a model 
+n <- length(coal_ts)
+n-k # rest of the observations
+
+i=12
+err1 = c()
+
+for(i in 1:(n-k))
+{
+  xtrain <- coal_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- coal_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(1,1,1), seasonal = c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast <- forecast(fit, h=60)
+  
+  err1 = c(err1, abs(fcast$mean-xtest)) 
+  
+  # This is mean squared error
+  err3 = c(err1, (fcast$mean-xtest)^2)
+  
+}
+
+RMSE1=sqrt(mean(err1)) #fit(0,1,1)(1,1,1)
+
+RMSE1
+```
+
+**Hydrocarbon**
+ARIMA(2,0,1)(0,1,2) for auto.arima() and  ARIMA(1,1,2)(0,1,1) from manual fitting.
+
+```{r, error=TRUE}
+k <- 75 # minimum data length for fitting a model 
+n <- length(hydro_ts)
+n-k # rest of the observations
+
+i=12
+err1 = c()
+err2 = c()
+
+for(i in 1:(n-k))
+{
+  xtrain <- hydro_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- hydro_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(2,0,1), seasonal = c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast1 <- forecast(fit, h=60)
+  
+  fit2 <- Arima(xtrain, order=c(1,1,2), seasonal = c(0,1,1),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=60)
+  
+  err1 = c(err1, abs(fcast1$mean-xtest)) 
+  err2 = c(err2, abs(fcast2$mean-xtest)) 
+  
+  # This is mean squared error
+  err3 = c(err1, (fcast1$mean-xtest)^2)
+  err4 = c(err2, (fcast2$mean-xtest)^2)
+  
+}
+
+RMSE1=sqrt(mean(err1)) #fit(0,1,1)(1,1,1)
+RMSE2=sqrt(mean(err2)) #fit(0,1,1)(1,1,1)
+
+RMSE1
+RMSE2
+```
+
+From this analysis, ARIMA(2,0,1)(0,1,2) from auto.arima() has a much lower RMSE.
+
+
+**Natural gas**
+ARIMA(2,1,1)(1,1,1) for auto.arima() and ARIMA(1,1,1)(0,1,2) from manual fitting.
+
+```{r, error=TRUE}
+k <- 75 # minimum data length for fitting a model 
+n <- length(natural_ts)
+n-k # rest of the observations
+
+i=12
+err1 = c()
+err2 = c()
+
+for(i in 1:(n-k))
+{
+  xtrain <- natural_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- natural_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(2,1,1), seasonal = c(1,1,1),
+                include.drift=TRUE, method="ML")
+  fcast1 <- forecast(fit, h=60)
+  
+  fit2 <- Arima(xtrain, order=c(1,1,1), seasonal = c(0,1,2),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=60)
+  
+  err1 = c(err1, abs(fcast1$mean-xtest)) 
+  err2 = c(err2, abs(fcast2$mean-xtest)) 
+  
+  # This is mean squared error
+  err3 = c(err1, (fcast1$mean-xtest)^2)
+  err4 = c(err2, (fcast2$mean-xtest)^2)
+  
+}
+
+RMSE1=sqrt(mean(err1)) #fit(0,1,1)(1,1,1)
+RMSE2=sqrt(mean(err2)) #fit(0,1,1)(1,1,1)
+
+RMSE1
+RMSE2
+```
+
+From this analysis, ARIMA(1,1,1)(0,1,2) from manual fitting has a much lower RMSE and is a better fit model for this data.
+
+**Petroleum**
+ARIMA(0,1,1)(0,0,2) for auto.arima() and ARIMA(0,1,1)(1,1,1) from manual fitting.
+
+```{r, error=TRUE}
+k <- 75 # minimum data length for fitting a model 
+n <- length(natural_ts)
+n-k # rest of the observations
+
+i=12
+err1 = c()
+err2 = c()
+
+for(i in 1:(n-k))
+{
+  xtrain <- natural_ts[1:(k-1)+i] #observations from 1 to 75
+  xtest <- natural_ts[k+i] #76th observation as the test set
+  
+  fit <- Arima(xtrain, order=c(0,1,1), seasonal = c(0,0,2),
+                include.drift=TRUE, method="ML")
+  fcast1 <- forecast(fit, h=60)
+  
+  fit2 <- Arima(xtrain, order=c(0,1,1), seasonal = c(1,1,1),
+                include.drift=TRUE, method="ML")
+  fcast2 <- forecast(fit2, h=60)
+  
+  err1 = c(err1, abs(fcast1$mean-xtest)) 
+  err2 = c(err2, abs(fcast2$mean-xtest)) 
+  
+  # This is mean squared error
+  err3 = c(err1, (fcast1$mean-xtest)^2)
+  err4 = c(err2, (fcast2$mean-xtest)^2)
+  
+}
+
+RMSE1=sqrt(mean(err1)) #fit(0,1,1)(1,1,1)
+RMSE2=sqrt(mean(err2)) #fit(0,1,1)(1,1,1)
+
+RMSE1
+RMSE2
+```
+
+From this analysis, it appears that both models perform the same and have the same RMSE. Either is a valid model to work with.

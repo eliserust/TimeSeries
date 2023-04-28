@@ -1,0 +1,3 @@
+"0",""
+"0","# Lag plots"
+"0","ts_lags(ice.ts, lags=c(6,12,24,36))"

@@ -677,3 +677,5 @@ tseries::adf.test(total$log_value %>% diff())
 The Augmented Dickey-Fuller tests are used to assess how stationary the data is. An ADF test of all energy production outputs produced a p-value of 0.01. Thus, we can reject the null hypothesis of no stationarity at the 1% level - indicating that this series does in fact exhibit stationarity now. <br><br>
 
 <br> <br>
+
+Source code for the above analysis: [Github](https://github.com/eliserust/TimeSeries/blob/main/eda.qmd)

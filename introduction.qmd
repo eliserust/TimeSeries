@@ -24,3 +24,5 @@ It is well documented at this point, by the [International Panel on Climate Chan
 9)  To what extent can we document the United States' reliance on domestic vs. foreign energy supplies in recent decades?
 10) How do carbon markets impact the energy sector and how effective are they at offsetting climate change?
 11) What industries have seen the most growth in clean energy usage - and where will future growth likely come from?
+
+GitHub Repository for this Project can be found [here](https://github.com/eliserust/TimeSeries)!

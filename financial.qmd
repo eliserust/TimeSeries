@@ -437,3 +437,8 @@ $$
   1.075e^{-1}(y_{t-6})^2 + 6.972e^{-2}(y_{t-7})^2 + 7.548e^{-1}(y_{t-8})^2
 \end{aligned}
 $$
+
+
+<br>
+
+Source code for the above analysis: [Github](https://github.com/eliserust/TimeSeries/blob/main/financial.qmd)

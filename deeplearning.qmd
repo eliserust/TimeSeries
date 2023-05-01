@@ -2,4 +2,1532 @@
 
 ---
 title: "Deep Learning for Time Series"
+jupyter: python3
+execute:
+    echo: false
 ---
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+import pandas as pd
+import numpy as np
+import warnings
+import datetime
+
+# Visualization
+import plotly
+import plotly.io as pio
+pio.renderers.default = "plotly_mimetype+notebook_connected"
+import plotly.express as px
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+# Model building
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN, LSTM ,GRU
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+from tensorflow.keras import regularizers
+
+warnings.filterwarnings("ignore")
+
+mpl.rcParams['figure.dpi']= 150 # Change inline figure resolution
+# Change default font
+mpl.rcParams['font.serif'] = "Georgia"
+# Then, "ALWAYS use sans-serif fonts"
+mpl.rcParams['font.family'] = "serif"
+```
+
+Using univariate time series, I here use deep learning to extract insights about energy in the United States. I use a Recurrent Neural Network (RNN), a Gated Recurrent Unit (GRU) network, and a Long-Short Term Memory Network (LSTM) to make future predictions related to CO2 Emissions. This analysis is in Python.
+
+**NOTE:** NN analysis on CO2 emissions data only due to sample size limitations. Because all the other datasets are on a yearly frequency we have a maximum of 50 datapoints per energy source - not enough to build a model with.
+
+**Packages used:**
+pandas, numpy, plotly, matplotlib, tensorflow, keras, sklearn
+
+# CO2 Emissions
+
+Broken down by emissions by Coal, Hydro, Natural Gas, Petroleum, and Total source.
+```{python}
+#| echo: false
+#| warning: false
+# Load in data
+co2 = pd.read_csv("~/Desktop/Papers/Georgetown/Spring 2023/TimeSeries-560/Quarto_Site/data/CO2.csv")
+# Unit is Million Metric Tons of Carbon Dioxide
+
+co2['Date'] = pd.to_datetime(co2.YYYYMM, format='%Y%M')
+co2['log_value'] = np.log10(co2['Value'])
+
+# Remove columns
+co2 = co2[['Date', 'Description', 'log_value']]
+
+# Look just at Coal, Hydrocarbon, Natural Gas, Petroleum
+# Filter by energy source
+coal = co2[co2['Description']=='Coal, Including Coal Coke Net Imports, CO2 Emissions']
+hydro = co2[co2['Description']=='Hydrocarbon Gas Liquids CO2 Emissions']
+natgas = co2[co2['Description']=='Natural Gas, Excluding Supplemental Gaseous Fuels, CO2 Emissions']
+petro = co2[co2['Description']=='Petroleum Coke CO2 Emissions']
+
+coal = coal.drop(columns=['Description'])
+hydro = hydro.drop(columns=['Description'])
+natgas = natgas.drop(columns=['Description'])
+petro = petro.drop(columns=['Description'])
+
+# Convert to numpy arrays
+# COAL
+coal_arr = np.array(coal["log_value"].values.astype('float32')).reshape(coal.shape[0],1)
+print("Coal observations: ", coal_arr.shape)
+
+# HYDRO
+hydro_arr = np.array(hydro["log_value"].values.astype('float32')).reshape(hydro.shape[0],1)
+print("Hydro observations: ", hydro_arr.shape)
+
+# NATURAL GAS
+natgas_arr = np.array(natgas["log_value"].values.astype('float32')).reshape(natgas.shape[0],1)
+print("Natural Gas observations: ", natgas_arr.shape)
+
+# PETRO
+petro_arr = np.array(petro["log_value"].values.astype('float32')).reshape(petro.shape[0],1)
+print("Petroleum observations: ", petro_arr.shape)
+```
+
+```{python}
+# Visualization plotting function
+def plotly_line_plot(t,y,title="Plot",x_label="t: time (months)",y_label="y(t): Response variable"):
+
+    # GENERATE PLOTLY FIGURE
+    fig = px.line(x=t[0],y=y[0], title=title, render_mode='SVG')  
+    # IMPORTANT: SVG FIXES RENDER ISSUES WITH SAD FACE 
+    # https://community.plotly.com/t/plotly-express-line-charts-are-not-shown/39715
+    
+    # ADD MORE
+    for i in range(1,len(y)):
+        if len(t[i])==1:
+            #print(t[i],y[i])
+            fig.add_scatter(x=t[i],y=y[i])
+        else:
+            fig.add_scatter(x=t[i],y=y[i], mode='lines')
+
+    fig.update_layout(
+        xaxis_title=x_label,
+        yaxis_title=y_label,
+        template="plotly_white",
+        showlegend=False
+    )
+    fig.show()
+```
+
+```{python}
+# Parameter split_percent defines the ratio of training examples
+def get_train_test(data, split_percent=0.8):
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    data = scaler.fit_transform(data).flatten()
+    n = len(data)
+    # Point for splitting data into train and test
+    split = int(n*split_percent)
+    train_data = data[range(split)]
+    test_data = data[split:]
+    return train_data, test_data, data
+```
+
+```{python}
+# PREPARE THE INPUT X AND TARGET Y
+def get_XY(dat, time_steps,plot_data_partition=False):
+    global X_ind,X,Y_ind,Y #use for plotting later
+
+    # INDICES OF TARGET ARRAY
+    # Y_ind [  12   24   36   48 ..]; print(np.arange(1,12,1)); exit()
+    Y_ind = np.arange(time_steps, len(dat), time_steps); #print(Y_ind); exit()
+    Y = dat[Y_ind]
+
+    # PREPARE X
+    rows_x = len(Y)
+    X_ind=[*range(time_steps*rows_x)]
+    del X_ind[::time_steps] #if time_steps=10 remove every 10th entry
+    X = dat[X_ind]; 
+
+    #PLOT
+    if(plot_data_partition):
+        plt.figure(figsize=(15, 6), dpi=80)
+        plt.plot(Y_ind, Y,'o',X_ind, X,'-'); plt.show(); 
+
+    #RESHAPE INTO KERAS FORMAT
+    X1 = np.reshape(X, (rows_x, time_steps-1, 1))
+    # print([*X_ind]); print(X1); print(X1.shape,Y.shape); exit()
+
+    return X1, Y
+```
+
+## Coal
+### Split data into training and testing data
+And visualize split!
+```{python}
+train_data, test_data, data = get_train_test(coal_arr)
+
+print("Training data size: ", train_data.shape)
+print("Test data size: ", test_data.shape)
+
+# SINGLE SERIES 
+t1=[*range(0,len(train_data))]
+t2=len(train_data)+np.array([*range(0,len(test_data))])
+plotly_line_plot([t1,t2],[train_data,test_data],title="CO2 Emissions per month from Coal since 1973")
+```
+
+### Reformat data into required shape
+Required shape = (samples, time, features)
+```{python}
+# Reformat data into required shape
+#PARTITION DATA
+p=10 # simpilar to AR(p) given time_steps data points, predict time_steps+1 point (make prediction one month in future)
+
+testX, testY = get_XY(test_data, p)
+trainX, trainY = get_XY(train_data, p)
+```
+
+```{python}
+## Build list 
+tmp1=[]; tmp2=[]; tmp3=[]; count=0
+for i in range(0,trainX.shape[0]):
+    # tmp1.append()
+    tmp1.append(count+np.array([*range(0,trainX[i,:,0].shape[0])]))
+    tmp1.append([count+trainX[i,:,0].shape[0]]); #print(([count+trainX[i,:,0].shape[0]]))
+    # tmp1.append([count+trainX[i,:,0].shape[0]+1])
+    tmp2.append(trainX[i,:,0])
+    tmp2.append([trainY[i]]); #print([trainY[i]])
+    # tmp2.append([trainY[i]])
+
+    count+=trainX[i,:,0].shape[0]+1
+
+    # print(i,trainX[i,:,0].shape)
+# print(tmp1)
+# print(tmp2)
+plotly_line_plot(tmp1,tmp2,title="CO2 Emissions per month from Coal since 1973")
+```
+
+```{python}
+#USER PARAM
+recurrent_hidden_units=3
+epochs=200
+f_batch=0.2    #fraction used for batch size
+optimizer="RMSprop"
+validation_split=0.2
+#print(trainX.shape,p,trainY.shape)
+
+# trainY=trainY.reshape(trainY.shape[0],1)
+# testY=testY.reshape(testY.shape[0],1)
+#print(p,trainX.shape,testX.shape,trainY.shape,testY.shape)
+```
+
+### Model 1 = RNN
+
+#### Model architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(SimpleRNN(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='relu')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer, metrics=['mse'])
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss (MSE)
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - RNN",x_label="training epochs",y_label="loss (MSE)")
+
+#print(history.history['loss'])
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Coal - RNN")
+plt.show()
+```
+
+### Model 2 - GRU
+
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(GRU(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - GRU",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Coal - GRU")
+plt.show()
+```
+
+### Model 3 - LSTM
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(LSTM(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - LSTM",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Coal - LSTM")
+plt.show()
+```
+
+### Discussion
+
+For predicting CO2 emissions from coal, the training RMSE are: <br>
+1) RNN - 0.18039<br>
+2) GRU - 0.18312<br>
+3) LSTM - 0.18691<br>
+<br>
+
+And the test RMSE are:<br>
+1) RNN - 0.12964<br>
+2) GRU - 0.19448<br>
+3) LSTM - 0.14685<br>
+
+Thus, the RNN minimized RMSE for both training and validation predictions, while the GRU model overfit the data. Regularization is a technique used in ANNs to prevent overfitting and improve generalization performance. L2 regularization was used here, which adds a penalty term to the loss function that is proportional to the sum of the squares of the weights in the network. It was decently important here - without L2 regularization the test RMSE for RNN, GRU, and LSTM models were all over 0.2 which is much higher than their regularized RMSE above.
+
+Forecasting here worked better than expected. For all three models I forecasted the next 5 years (60) months, and the forecasted plots appear to mimic the seasonality and spikes of the previous 30 years. Across all three models, the first 3-4 years are well forecasted and display the expected spikes in emissions during the summer. However, by year 5 forecast weakens and the nuance and variation in the trend is smaller.
+
+The ARIMA(1,1,1)(0,1,2) forecast shared the same seasonality, but exhibited a downwards trend. The ANN models also exhibit a slight downward trend, but are far more consistent over time. The RNSE from the ARIMA model was 0.0433, significantly smaller than the ANN RMSE. With more model tuning the ANN could likely outperform the ARIMA model.
+
+
+## Hydro
+### Split data into training and testing data
+And visualize split!
+```{python}
+train_data, test_data, data = get_train_test(hydro_arr)
+
+print("Training data size: ", train_data.shape)
+print("Test data size: ", test_data.shape)
+
+# SINGLE SERIES 
+t1=[*range(0,len(train_data))]
+t2=len(train_data)+np.array([*range(0,len(test_data))])
+plotly_line_plot([t1,t2],[train_data,test_data],title="CO2 Emissions per month from Hydro Power since 1973")
+```
+
+### Reformat data into required shape
+Required shape = (samples, time, features)
+```{python}
+# Reformat data into required shape
+#PARTITION DATA
+p=10 # simpilar to AR(p) given time_steps data points, predict time_steps+1 point (make prediction one month in future)
+
+testX, testY = get_XY(test_data, p)
+trainX, trainY = get_XY(train_data, p)
+```
+
+```{python}
+## Build list 
+tmp1=[]; tmp2=[]; tmp3=[]; count=0
+for i in range(0,trainX.shape[0]):
+    # tmp1.append()
+    tmp1.append(count+np.array([*range(0,trainX[i,:,0].shape[0])]))
+    tmp1.append([count+trainX[i,:,0].shape[0]]); #print(([count+trainX[i,:,0].shape[0]]))
+    # tmp1.append([count+trainX[i,:,0].shape[0]+1])
+    tmp2.append(trainX[i,:,0])
+    tmp2.append([trainY[i]]); #print([trainY[i]])
+    # tmp2.append([trainY[i]])
+
+    count+=trainX[i,:,0].shape[0]+1
+
+    # print(i,trainX[i,:,0].shape)
+# print(tmp1)
+# print(tmp2)
+plotly_line_plot(tmp1,tmp2,title="CO2 Emissions per month from HydroPower since 1973")
+```
+
+```{python}
+#USER PARAM
+recurrent_hidden_units=3
+epochs=200
+f_batch=0.2    #fraction used for batch size
+optimizer="RMSprop"
+validation_split=0.2
+#print(trainX.shape,p,trainY.shape)
+
+# trainY=trainY.reshape(trainY.shape[0],1)
+# testY=testY.reshape(testY.shape[0],1)
+#print(p,trainX.shape,testX.shape,trainY.shape,testY.shape)
+```
+
+### Model 1 = RNN
+
+#### Model architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(SimpleRNN(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='relu')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer, metrics=['mse'])
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss (MSE)
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - RNN",x_label="training epochs",y_label="loss (MSE)")
+
+#print(history.history['loss'])
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from HydroPower - RNN")
+plt.show()
+```
+
+### Model 2 - GRU
+
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(GRU(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - GRU",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from HydroPower - GRU")
+plt.show()
+```
+
+### Model 3 - LSTM
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(LSTM(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - LSTM",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from HydroPower - LSTM")
+plt.show()
+```
+
+### Discussion
+For predicting CO2 emissions from Hydro Power, the training RMSE are: <br>
+1) RNN - 0.17576<br>
+2) GRU - 0.19256<br>
+3) LSTM - 0.18912<br>
+<br>
+
+And the test RMSE are:<br>
+1) RNN - 0.07061<br>
+2) GRU - 0.02567<br>
+3) LSTM - 0.07663<br>
+
+Thus, the RNN minimized RMSE for training predictions, but the GRU ANN produced the lowest test RMSE of the group. Test RMSE is significantly lower than training RMSE, so further analysis could investigate possible data leakage. Regularization again improved the model performance, by 0.04 points in the RMSE.
+
+Forecasting here worked better than expected. For all three models I forecasted the next 5 years (60) months, and the forecasted plots appear to mimic the seasonality and spikes of the previous 30 years. Across all three models, the first 4 years are well forecasted and display the expected spikes in emissions during the summer. However, by year 5 forecast weakens and the nuance and variation in the trend is smaller.
+
+The ARIMA(1,1,2)(0,1,1) forecast shared the same seasonality, but exhibited an upwards trend across all 5 years. The ANN models exhibit no trend (only seasonality). The RNSE from the ARIMA model was 0.07292737, significantly smaller than the ANN RMSE. With more model tuning the ANN could likely outperform the ARIMA model.
+
+## Natural Gas
+### Split data into training and testing data
+And visualize split!
+```{python}
+train_data, test_data, data = get_train_test(natgas_arr)
+
+print("Training data size: ", train_data.shape)
+print("Test data size: ", test_data.shape)
+
+# SINGLE SERIES 
+t1=[*range(0,len(train_data))]
+t2=len(train_data)+np.array([*range(0,len(test_data))])
+plotly_line_plot([t1,t2],[train_data,test_data],title="CO2 Emissions per month from Natural Gas since 1973")
+```
+
+### Reformat data into required shape
+Required shape = (samples, time, features)
+```{python}
+# Reformat data into required shape
+#PARTITION DATA
+p=10 # simpilar to AR(p) given time_steps data points, predict time_steps+1 point (make prediction one month in future)
+
+testX, testY = get_XY(test_data, p)
+trainX, trainY = get_XY(train_data, p)
+```
+
+```{python}
+## Build list 
+tmp1=[]; tmp2=[]; tmp3=[]; count=0
+for i in range(0,trainX.shape[0]):
+    # tmp1.append()
+    tmp1.append(count+np.array([*range(0,trainX[i,:,0].shape[0])]))
+    tmp1.append([count+trainX[i,:,0].shape[0]]); #print(([count+trainX[i,:,0].shape[0]]))
+    # tmp1.append([count+trainX[i,:,0].shape[0]+1])
+    tmp2.append(trainX[i,:,0])
+    tmp2.append([trainY[i]]); #print([trainY[i]])
+    # tmp2.append([trainY[i]])
+
+    count+=trainX[i,:,0].shape[0]+1
+
+    # print(i,trainX[i,:,0].shape)
+# print(tmp1)
+# print(tmp2)
+plotly_line_plot(tmp1,tmp2,title="CO2 Emissions per month from Natural Gas since 1973")
+```
+
+```{python}
+#USER PARAM
+recurrent_hidden_units=3
+epochs=200
+f_batch=0.2    #fraction used for batch size
+optimizer="RMSprop"
+validation_split=0.2
+#print(trainX.shape,p,trainY.shape)
+
+# trainY=trainY.reshape(trainY.shape[0],1)
+# testY=testY.reshape(testY.shape[0],1)
+#print(p,trainX.shape,testX.shape,trainY.shape,testY.shape)
+```
+
+### Model 1 = RNN
+
+#### Model architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(SimpleRNN(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='relu')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer, metrics=['mse'])
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss (MSE)
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - RNN",x_label="training epochs",y_label="loss (MSE)")
+
+#print(history.history['loss'])
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Natural Gas - RNN")
+plt.show()
+```
+
+### Model 2 - GRU
+
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(GRU(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - GRU",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Natural Gas - GRU")
+plt.show()
+```
+
+### Model 3 - LSTM
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(LSTM(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - LSTM",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Natural Gas - LSTM")
+plt.show()
+```
+
+### Discussion
+
+For predicting CO2 emissions from Natural Gas, the training RMSE are: <br>
+1) RNN - 0.19666<br>
+2) GRU - 0.19114<br>
+3) LSTM - 0.18312<br>
+<br>
+
+And the test RMSE are:<br>
+1) RNN - 0.05314<br>
+2) GRU - 0.07994<br>
+3) LSTM - 0.21063<br>
+
+Thus, the GRU model minimized RMSE for training predictions, while the RNN minimized RMSE for test predictions. Similarly to Hydro modeling, there is a pretty big difference between train and test RMSE for RNN and GRU models here. This *could* indicate data leakage and should be investigated via further analysis. The LSTM, on the other hand, appears to be overfitted as the test RMSE is higher than the train RMSE. Regularization again improved the model performance slightly, by 0.02 points in the RMSE.
+
+Forecasting here worked better than expected. For all three models I forecasted the next 5 years (60) months, and the forecasted plots appear to mimic the seasonality and spikes of the previous 30 years. Across all three models, the first 4 years are well forecasted and display the expected spikes in emissions during the summer. However, by year 5 forecast weakens and the nuance and variation in the trend is smaller.
+
+The ARIMA(1,1,1)(0,1,2) forecast shared the same seasonality, but exhibited an upwards trend across all 5 years. The ANN models exhibit no trend (only seasonality). The RNSE from the ARIMA model was 0.04678813, only slightly smaller than the ANN RMSE. The RNN had an RMSE of 0.05314, so with more model tuning could surely outperform the ARIMA model.
+
+
+
+## Petroleum
+### Split data into training and testing data
+And visualize split!
+```{python}
+train_data, test_data, data = get_train_test(petro_arr)
+
+print("Training data size: ", train_data.shape)
+print("Test data size: ", test_data.shape)
+
+# SINGLE SERIES 
+t1=[*range(0,len(train_data))]
+t2=len(train_data)+np.array([*range(0,len(test_data))])
+plotly_line_plot([t1,t2],[train_data,test_data],title="CO2 Emissions per month from Petroleum since 1973")
+```
+
+### Reformat data into required shape
+Required shape = (samples, time, features)
+```{python}
+# Reformat data into required shape
+#PARTITION DATA
+p=10 # simpilar to AR(p) given time_steps data points, predict time_steps+1 point (make prediction one month in future)
+
+testX, testY = get_XY(test_data, p)
+trainX, trainY = get_XY(train_data, p)
+```
+
+```{python}
+## Build list 
+tmp1=[]; tmp2=[]; tmp3=[]; count=0
+for i in range(0,trainX.shape[0]):
+    # tmp1.append()
+    tmp1.append(count+np.array([*range(0,trainX[i,:,0].shape[0])]))
+    tmp1.append([count+trainX[i,:,0].shape[0]]); #print(([count+trainX[i,:,0].shape[0]]))
+    # tmp1.append([count+trainX[i,:,0].shape[0]+1])
+    tmp2.append(trainX[i,:,0])
+    tmp2.append([trainY[i]]); #print([trainY[i]])
+    # tmp2.append([trainY[i]])
+
+    count+=trainX[i,:,0].shape[0]+1
+
+    # print(i,trainX[i,:,0].shape)
+# print(tmp1)
+# print(tmp2)
+plotly_line_plot(tmp1,tmp2,title="CO2 Emissions per month from Petroleum since 1973")
+```
+
+```{python}
+#USER PARAM
+recurrent_hidden_units=3
+epochs=200
+f_batch=0.2    #fraction used for batch size
+optimizer="RMSprop"
+validation_split=0.2
+#print(trainX.shape,p,trainY.shape)
+
+# trainY=trainY.reshape(trainY.shape[0],1)
+# testY=testY.reshape(testY.shape[0],1)
+#print(p,trainX.shape,testX.shape,trainY.shape,testY.shape)
+```
+
+### Model 1 = RNN
+
+#### Model architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(SimpleRNN(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='relu')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer, metrics=['mse'])
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss (MSE)
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - RNN",x_label="training epochs",y_label="loss (MSE)")
+
+#print(history.history['loss'])
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Petroleum - RNN")
+plt.show()
+```
+
+### Model 2 - GRU
+
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(GRU(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - GRU",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Petroleum - GRU")
+plt.show()
+```
+
+### Model 3 - LSTM
+#### Model Architecture
+```{python}
+#CREATE MODEL
+model = Sequential()
+model.add(LSTM(
+recurrent_hidden_units,
+return_sequences=False,
+input_shape=(trainX.shape[1],trainX.shape[2]), 
+# recurrent_dropout=0.8,
+recurrent_regularizer=regularizers.L2(1e-2),
+activation='tanh')
+          ) 
+     
+#NEED TO TAKE THE OUTPUT RNN AND CONVERT TO SCALAR 
+model.add(Dense(units=1, activation='linear'))
+
+# COMPILE THE MODEL 
+model.compile(loss='MeanSquaredError', optimizer=optimizer)
+model.summary()
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| include: false
+#TRAIN MODEL
+history = model.fit(
+trainX, trainY, 
+epochs=epochs, 
+batch_size=int(f_batch*trainX.shape[0]), 
+validation_split=validation_split,  # BEING "SLOPPY WITH CROSS VALIDATION" HERE FOR TIME-SERIES
+verbose=2)
+```
+
+#### Plot training and validation loss
+```{python}
+#HISTORY PLOT
+epochs_steps = [*range(0, len(history.history['loss']))]
+
+# MAKE PREDICTIONS
+train_predict = model.predict(trainX).squeeze()
+test_predict = model.predict(testX).squeeze()
+print(trainX.shape, train_predict.shape,trainY.shape,testX.shape, test_predict.shape,testY.shape)
+
+#COMPUTE RMSE
+print(trainY.shape, train_predict.shape)
+train_rmse = np.sqrt(mean_squared_error(trainY, train_predict))
+test_rmse = np.sqrt(mean_squared_error(testY, test_predict))
+print(np.mean((trainY-train_predict)**2.0))
+print(np.mean((testY-test_predict)**2.0))
+
+print('Train MSE = %.5f RMSE = %.5f' % (train_rmse**2.0,train_rmse))
+print('Test MSE = %.5f RMSE = %.5f' % (test_rmse**2.0,test_rmse))    
+
+# PLOTLY PLOT
+plotly_line_plot([epochs_steps,epochs_steps],[history.history['loss'],history.history['val_loss']],title="Training and Validation Loss - LSTM",x_label="training epochs",y_label="loss (MSE)")
+```
+
+#### Forecasting - next 5 years (60 months)
+```{python}
+### FORECASTING - next 5 years
+# Create test dataset that includes that last 5x12 = 60 timesteps of the original data
+data_5 = test_data[70:]
+data_5.shape
+
+# Reshape into (samples, time, features) format
+testX, testY = get_XY(data_5, p)
+
+# generate predictions for the next 60 timesteps
+preds = model.predict(testX)
+
+# # reshape the predictions into a one-dimensional array
+preds = preds.reshape(-1)
+
+# # combine the predicted values with the original dataset
+combined = np.concatenate((data_5, preds))
+
+# # plot the original dataset and the predicted values
+plt.plot(combined)
+plt.xlabel("Timestep (months)")
+plt.ylabel("Predicted CO2 Emissions")
+plt.title("5 year forecast for CO2 Emissions from Petroleum - LSTM")
+plt.show()
+```
+
+### Discussion
+
+For predicting CO2 emissions from petroleum, the training RMSE are: <br>
+1) RNN - 0.18713<br>
+2) GRU - 0.18709<br>
+3) LSTM - 0.18830<br>
+<br>
+
+And the test RMSE are:<br>
+1) RNN - 0.09508<br>
+2) GRU - 0.14254<br>
+3) LSTM - 0.13025<br>
+
+Thus, the GRU model minimized RMSE for training predictions, while the RNN model minimized RMSE for test predictions. However, the RNN model may suffer from data leakage so the GRU model is likely the best model for predicting natural gas CO2 emissions going forward. Regularization improved the model performance.
+
+Forecasting here worked better than expected. For all three models I forecasted the next 5 years (60) months, and the forecasted plots appear to mimic the seasonality and spikes of the previous 30 years. Across all three models, the first 4 years are well forecasted and display the expected spikes in emissions during the summer. However, by year 5 forecast weakens and the nuance and variation in the trend is smaller.
+
+The SARIMA(0,1,1)(1,1,1) forecast shared the same seasonality, but exhibited a slight downwards trend across all 5 years. The ANN models exhibit no trend (only seasonality). The RMSE from the ARIMA model was 0.04678813, only slightly smaller than the ANN RMSE. The RNN had an RMSE of 0.09508, so with more model tuning could likely outperform the ARIMA model.
+
+# Comparison of Deep Learning to Traditional TS Models
+
+In this analysis, I used 3 types of Artificial Neural Networks (ANN) to predict CO2 emissions across 4 different fuel sources: coal, hydrogen gas, natural gas, and petroleum. The goal here was to better understand which fuel sources contribute the most to climate change as well as understand trends for how their usage/consumption is changing over time. I performed a similar analysis in the ARMA/ARIMA/SARIMA Models section. Above, I compared the RMSE results and forecast results of each ANN to the ARMA/ARIMA/SARIMA results but to recap: the traditional time series models underwent significant hyperparameter tuning and model tuning in order to achieve optimal results and minimize RMSE. The ANNs implemented above were simple neural networks with minimal layers, to explore how neural networks can be used in time series analysis. Model tuning was performed, but the NNs could be further robustly tuned to experiment wtih different numbers of recurrent_hidden_units, epochs, activation functions, layers, learning rates, etc. At baseline, the neural networks were able to achieve training RMSEs of around 0.18 across all models and test RMSEs between 0.03 and 0.09. This rivals traditional models after extensive optimization, indicating that the neural networks are far superior models for time series analysis. Recurrent Neural Networks, Gated Recurrent Unit networks, and Long-Short Term Memory networks are all specifically designed to handle sequential data (such as time series) and can handle complex relationships in data better than traditional methods. They are probably better suited for handling multivariate data that a VAR model would use, while traditional time series models do perform well on univariate data like we have here. Additionally, traditional time series models are easy to interpret - whereas neural networks are more convoluted and opaque in their processes and are thus difficult to interpret beyond model fit metrics.
+
+However, both model types performed well in the task of predicting CO2 emissions by source. In forecasting, the ARMA/ARIMA/SARIMA models were able to capture both trend and seasonality for 5 years, while the neural networks performed spectacularly for 4 years and then faltered for year 5 predictions. NN forecasting also didn't do a great job forecasting overall trend (increases or decreases in CO2 emissions), even though they captured month to month spikes in emissions quite well.
+
+Overall, both types of models can be useful depending on the data, and experimenting with both in order to achieve the optimal forecasting model is a good practice when dealing with any time series data.
+
+Source code for the above analysis: [Github](https://github.com/eliserust/TimeSeries/blob/main/nn.qmd)
